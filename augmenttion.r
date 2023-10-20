@@ -54,7 +54,7 @@ test_sum <- test_sum %>%
   mutate(leaf_plot = gsub("_[0-9]*$","", leaf_plot)) #removes all trailing numbers starting at the underscore
 test_here <- aggregate(dmg_diff ~ leaf_plot , data = test_sum, FUN = sum)
 
-
+# difference by plot 
 beans_sum <- beans_new %>% 
   mutate(leaf_plot = gsub("_[0-9]*$", "", leaf_plot))
 beans_sum
@@ -63,3 +63,5 @@ beans_sum$leaf_plot[beans_sum$leaf_plot=='Aug_1100'] <-'1100_Aug'
 beans_sum$leaf_plot[beans_sum$leaf_plot=='Aug_1200'] <-'1200_Aug'
 beans_sum$leaf_plot[beans_sum$leaf_plot=='Ctl_1200'] <-'1200_Ctl'
 beans_sum$leaf_plot[beans_sum$leaf_plot=='Dep_1200'] <-'1200_Dep'
+
+#now I need to go back and get the total area
