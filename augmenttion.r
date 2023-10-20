@@ -13,10 +13,9 @@ beans <- beans %>%
 beans_test <- beans[1:10,]
 beans_test
 
-# beans_test %>% 
-#   mutate(test = beans_test[seq_along(beans_test) %% 2==0,'post'])
-
 timing <- c("total", "damaged")
+
+# test of difference ####
 test <- beans_test %>% 
   group_by(leaf_plot) %>% 
   mutate(timing = timing) %>% 
@@ -29,13 +28,14 @@ test_new <- test %>%
   mutate(dmg_diff = total_area - lag(total_area)) %>% 
   na.omit() %>% 
   select(leaf_plot, dmg_diff) %>% 
-  mutate(dmg_diff = abs(dmg_diff)) %>% 
+  mutate(dmg_diff = abs(dmg_diff)) 
 test_new
 
 #check to make sure these values are correct 
 diff(test$total_area[1:2])
 diff(test$total_area[3:4])
 
+# full data set ####
 beans$leaf_plot <- as.factor(beans$leaf_plot)
 # now to do this to the whole data set (beans)
 beans_new <- beans %>% 
@@ -47,3 +47,19 @@ beans_new <- beans %>%
   mutate(across(c('dmg_diff'),round,2))
   
 beans_new 
+
+# test summing plots  
+test_sum <- test_new 
+test_sum <- test_sum %>% 
+  mutate(leaf_plot = gsub("_[0-9]*$","", leaf_plot)) #removes all trailing numbers starting at the underscore
+test_here <- aggregate(dmg_diff ~ leaf_plot , data = test_sum, FUN = sum)
+
+
+beans_sum <- beans_new %>% 
+  mutate(leaf_plot = gsub("_[0-9]*$", "", leaf_plot))
+beans_sum
+beans_sum <- aggregate(dmg_diff ~ leaf_plot, data = beans_sum, FUN = sum)
+beans_sum$leaf_plot[beans_sum$leaf_plot=='Aug_1100'] <-'1100_Aug'
+beans_sum$leaf_plot[beans_sum$leaf_plot=='Aug_1200'] <-'1200_Aug'
+beans_sum$leaf_plot[beans_sum$leaf_plot=='Ctl_1200'] <-'1200_Ctl'
+beans_sum$leaf_plot[beans_sum$leaf_plot=='Dep_1200'] <-'1200_Dep'
