@@ -81,7 +81,7 @@ beans_final <- beans_split %>%
   arrange(plot) %>% 
   mutate(plot = as.numeric(plot)) %>% 
   mutate(trt = as.factor(trt)) %>%
-  filter(damage < 15000)
+  filter(damage < 15000) #had one outlier from each trt with incorrectly scanned leaves.removing them here 
 as_tibble(beans_final)
 
 unique(beans_final$trt)
