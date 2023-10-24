@@ -11,37 +11,40 @@ beans <- beans %>%
 # test code #### 
 # time to do math 
 # I just want a few rows to mess with first
-beans_test <- beans[1:10,]
+beans_test <- beans[1:10,] #making a subset of the first 10 rows to practice 
 beans_test
 
-timing <- c("total", "damaged")
+timing <- c("total", "damaged") #new column to identify damage timing
 
 # test of difference ###
 test <- beans_test %>% 
   group_by(leaf_plot) %>% 
-  mutate(timing = timing) %>% 
-  select(leaf_plot, total_area, timing)
+  mutate(timing = timing) %>% # adding new timing column
+  select(leaf_plot, total_area, timing) # selecting the columns I want to work with
 test
 
 ### omit anything above 10000
 #get the difference of each two columns
+?lag # compute lagged or leading values
 test_new <- test %>% 
   group_by(leaf_plot) %>% 
-  mutate(dmg_diff = total_area - lag(total_area)) %>% 
+  mutate(dmg_diff = total_area - lag(total_area)) %>% #subtract the first total_area value by the next unique/new total_area value. If lag() is left blank, it will subtract the next value. E.g., 1-2, 2-3, 3-4, 4-5, etc. 
   na.omit() %>% 
   select(leaf_plot, dmg_diff) %>% 
-  mutate(dmg_diff = abs(dmg_diff)) 
+  mutate(dmg_diff = abs(dmg_diff)) # these values came out to be negative, so I absolute value them 
 test_new
 
 #check to make sure these values are correct 
-diff(test$total_area[1:2])
+diff(test$total_area[1:2]) #checking work to ensure lag worked with diff()
 diff(test$total_area[3:4])
 
 # test summing plots  
 test_sum <- test_new 
 test_sum <- test_sum %>% 
   mutate(leaf_plot = gsub("_[0-9]*$","", leaf_plot)) #removes all trailing numbers starting at the underscore
-test_here <- aggregate(dmg_diff ~ leaf_plot , data = test_sum, FUN = sum)
+                          # _ = starting point, [0-9]* = numeric values, $ = trailing numeric values
+                          # ONLY works if the all trailing values are numeric
+test_here <- aggregate(dmg_diff ~ leaf_plot , data = test_sum, FUN = sum) # add all values with same name
 
 # full data set ####
 beans$leaf_plot <- as.factor(beans$leaf_plot)
