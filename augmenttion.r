@@ -125,7 +125,8 @@ ggboxplot(beans_final, x = 'trt', y = 'damage')
 ggplot(beans_final, aes(trt, damage, fill = trt))+
   geom_boxplot()+
   stat_boxplot(geom = 'errorbar',
-               width = 0.2)+
+               width = 0.2,
+               size = 0.75)+
   theme_light()+
   labs(title = 'Total Damage by Treatment')+
   theme(legend.position = "none")+
