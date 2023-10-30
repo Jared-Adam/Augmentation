@@ -13,6 +13,11 @@ counts_clean <- counts %>%
               trt == "dep" ~ 2,
               trt == "ctl" ~ 1)) %>% 
   mutate(hemipteran = hemiptera + pentatomid) %>% 
+  rename(Hemiptera = hemipteran, 
+         Coleoptera = coleoptera, 
+         Caelifera = caelifera, 
+         Lepidoptera = lepidoptera, 
+         Araneomorphae = spiders) %>% 
   select(-pentatomid, -hemiptera)
 
 
@@ -21,22 +26,22 @@ counts_clean <- counts %>%
 group_by(counts_clean, trt) %>% 
   summarise(
     count = n(), 
-    mean = mean(spiders),
-    sd = sd(spiders), 
-    median = median(spiders), 
-      IQR = IQR(spiders)
+    mean = mean(Araneomorphae),
+    sd = sd(Araneomorphae), 
+    median = median(Araneomorphae), 
+      IQR = IQR(Araneomorphae)
   )
 
 group_by(counts_clean, trt) %>% 
   summarise(
     count = n(), 
-    mean = mean(hemipteran),
-    sd = sd(hemipteran), 
-    median = median(hemipteran), 
-    IQR = IQR(hemipteran)
+    mean = mean(Hemiptera),
+    sd = sd(Hemiptera), 
+    median = median(Hemiptera), 
+    IQR = IQR(Hemiptera)
   )
 
-counts$trt <- as.factor(counts$trt)
+counts_clean$trt <- as.factor(counts_clean$trt)
 
 # Permanova ####
 # need a data matrix for just the groups of interest
@@ -54,8 +59,14 @@ permanova <- adonis2(dist ~ trt, permutations = 999, method = "bray", data = cou
 
 permanova
 #trt is significant here, need to investigate this further
+library(devtools)
+install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+library(pairwiseAdonis)
+?pairwise.adonis
+#post-hoc
+post_test <- pairwise.adonis2(dist ~ trt, data = counts_clean)
 
-
+####
 # NMDS ####
 
 # metaMDS must be numeric
@@ -101,7 +112,7 @@ library(ggrepel)
 
 ggplot()+
   geom_polygon(data = hull.data, (aes(x = NMDS1, y = NMDS2, group = trt, fill = trt)), alpha = 0.3)+
-  scale_fill_manual(values = c("black", "red", "blue"))+
+  scale_fill_manual(name = "Treatment", labels = c('Control', 'Depletion', 'Agumentation'), values = c("black", "red", "blue"))+
   geom_segment(data = functional_scores, aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), 
                                              arrow = arrow(length = unit(0.25, "cm")),
                color = "grey10", lwd = 0.3)+
@@ -110,7 +121,6 @@ ggplot()+
   annotate(geom = "text", x=.4, y=.5, label ="Stress: 0.1380172", size = 5)+
   coord_equal()+
   theme_minimal()+
-  labs(fill="Treatment")+
   labs(title = "Arthropod abundance by treatment")+
   theme(axis.text.x = element_blank(),  # remove x-axis text
         axis.text.y = element_blank(), # remove y-axis text
