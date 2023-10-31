@@ -70,7 +70,7 @@ beans_sum$leaf_plot[beans_sum$leaf_plot=='Ctl_1200'] <-'1200_Ctl'
 beans_sum$leaf_plot[beans_sum$leaf_plot=='Dep_1200'] <-'1200_Dep'
 
 # split the names to have a new column of rep and trt 
-# beans_split <- beans_sum
+beans_split <- beans_sum
 # beans_split$trt <- rownames(beans_split)
 # beans_split$trt <- str_split_fixed(beans_split$trt, "_",2)
 
@@ -120,19 +120,31 @@ group_by(beans_final, trt) %>%
       IQR = IQR(damage)
   )
 library(ggpubr)
+library(RColorBrewer)
 ggboxplot(beans_final, x = 'trt', y = 'damage')
 
+display.brewer.all(colorblindFriendly = TRUE)
+display.brewer.pal(n=3, name = "Dark2")
+brewer.pal(n=3, name = "Dark2")
+
+
 ggplot(beans_final, aes(trt, damage, fill = trt))+
-  geom_boxplot()+
+  geom_boxplot(alpha = 0.6)+
+  scale_fill_manual(values = c("#1B9E77","#7570B3","#D95F02"))+
   stat_boxplot(geom = 'errorbar',
                width = 0.2,
                size = 0.75)+
   theme_light()+
+  theme(axis.text = element_text(size = 18), 
+        axis.title = element_text(size = 22),
+        plot.title = element_text(size = 24))+
   labs(title = 'Total Damage by Treatment')+
   theme(legend.position = "none")+
-  scale_x_discrete(name = "Treatment")+
-  scale_y_continuous(name = "Total Damage (mm)")
-
+  scale_x_discrete(name = "Treatment",
+                   limits = c("Ctl", "Dep", "Aug"),
+                   labels = c("Control", "Depletion", "Augmentation"))+
+  scale_y_continuous(name = "Total Damage (mm^2)")
+  
 
 
 
