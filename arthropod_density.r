@@ -132,6 +132,10 @@ var(counts_clean$total_pest)
 # nested (russian doll, e.g., (1|location/block/plot))
 # crossed (not related, e.g., (1|location) + (1|date)
 
+# intercept = predicted value of the dependent varaible when the indep values are 0
+# do you need to care? 
+   # depends! 
+
 library(lme4)
 # library(glmmTMB)
 library(emmeans)
@@ -142,7 +146,7 @@ summary(spider_model)
 hist(residuals(spider_model))
 
 # this does not work
-# because trt is only three? 
+# because trt is only three levels? 
 spider_emm <- emmeans(spider_model, "trt")
 pairs(spider_emm)
 
@@ -177,6 +181,7 @@ test <- glmer.nb(total_pest ~ Araneomorphae + (1|site), data = counts_clean)
 summary(test)
 hist(residuals(test))
 
+# WITH trt, for fun
 test_2 <- glmer.nb(total_pest ~ Araneomorphae + trt + (1|site), data = counts_clean)
 summary(test_2)
 hist(residuals(test_2))
