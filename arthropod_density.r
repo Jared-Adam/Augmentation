@@ -8,6 +8,9 @@ library(vegan)
 counts<- as_tibble(augmentation_counts)
 
 # merging pentatomid into hermiptera 
+# I also want to add a new column for total pest
+# this will be useful in the glmer phase 
+
 counts_clean <- counts %>% 
   mutate(trt = case_when(trt == "aug" ~ 3,
               trt == "dep" ~ 2,
@@ -18,6 +21,7 @@ counts_clean <- counts %>%
          Caelifera = caelifera, 
          Lepidoptera = lepidoptera, 
          Araneomorphae = spiders) %>% 
+  select(-pentatomid, -hemiptera) %>% 
   mutate(site = case_when(plot == 100 ~ 1,
                            plot == 200 ~ 1,
                            plot == 300 ~ 2,
@@ -30,8 +34,8 @@ counts_clean <- counts %>%
                            plot == 900 ~ 5,
                            plot == 1000 ~ 6,
                            plot == 1100 ~ 6)) %>% 
-  select(-pentatomid, -hemiptera)
-
+  rowwise() %>% 
+  mutate(total_pest = sum(Coleoptera, Hemiptera, Caelifera, Lepidoptera, na.rm = T))
 
 # having a look at the spread of spiders and hemiptera
 # it would make sense that there would be higher counts in augmentation for both
@@ -102,65 +106,80 @@ plot(trt.res.betadisper)
 # #post-hoc
 # post_test <- pairwise.adonis2(dist ~ trt, data = counts_clean)
 
-# GLM ####
-# overdispersed?
+# GLMM ####
+
+# how is the spread? 
+plot(counts_clean$Araneomorphae)
+hist(counts_clean$Araneomorphae)
+# not normal 
+
+plot(counts_clean$total_pest)
+hist(counts_clean$total_pest)
+#not normal
+
+# overdispersed? 
+# var > mean 
 mean(counts_clean$Araneomorphae)
 var(counts_clean$Araneomorphae)
 # yes
 
-mean(counts_clean$Coleoptera)
-var(counts_clean$Coleoptera)
-# yes 
+mean(counts_clean$total_pest)
+var(counts_clean$total_pest)
 
-mean(counts_clean$Hemiptera)
-var(counts_clean$Hemiptera)
-# yes
 
-mean(counts_clean$Caelifera)
-var(counts_clean$Caelifera)
-# yes 
-
-mean(counts_clean$Lepidoptera)
-var(counts_clean$Lepidoptera)
-# yes
+# The fixed effects are the coefficients (intercept, slope) as we usually think about the. (pops, trt, etc.)
+# The random effects are the variances of the intercepts or slopes across groups (site/ location/ block)
+# nested (russian doll, e.g., (1|location/block/plot))
+# crossed (not related, e.g., (1|location) + (1|date)
 
 library(lme4)
-# want model of each population by trt with site as effect 
-spider <- glmer.nb(Araneomorphae ~ trt + (1|site), data = counts_clean)
-summary(spider)
-hist(residuals(spider))
-plot(x = counts_clean$trt, y = counts_clean$Araneomorphae)
+# library(glmmTMB)
+library(emmeans)
+# want model of each population by trt with site as random effect 
+?glmer
+spider_model <- glmer.nb(Araneomorphae ~ trt + (1|site), data = counts_clean)
+summary(spider_model)
+hist(residuals(spider_model))
 
-ggplot(counts_clean, aes(x=trt,y=Araneomorphae, fill=site))+
-  geom_bar(aes(x=trt,y=Araneomorphae, fill=site),stat = "identity",position="dodge")+
-  labs(x= "Treatment", y="Abundance", title = "Araneomorphae: Abundance x treatment*site")+
-  scale_fill_brewer(palette = "Dark2", labels=c("Site 1", "Site 2", "Site 3", "Site 4", "Site 5", "Site 6"),name = "Site")+
+# this does not work
+# because trt is only three? 
+spider_emm <- emmeans(spider_model, "trt")
+pairs(spider_emm)
+
+ggplot(counts_clean)+
+  geom_bar(aes(x = trt, y = Araneomorphae , fill = trt), stat = "identity", position = "dodge") + 
+  scale_x_discrete(limits = c("1", "2", "3"),
+                   labels = c("Control", "Depletion", "Augmentation"))
+
+
+# ?glmmTMB
+# spider_model_2 <- glmmTMB(Araneomorphae ~ trt + (1|site), data = counts_clean, family = nbinom2)
+# summary(spider_model_2)
+# hist(residuals(spider_model_2))
+# spider_emm <- emmeans(spider_model_2, pairwise ~ as.factor(trt), type = 'response')
+
+
+pest_model <- glmer.nb(total_pest ~ trt + (1|site), data = counts_clean)
+summary(pest_model)
+plot(x = counts_clean$trt, y = counts_clean$total_pest)
+ggplot(counts_clean)+
+  geom_bar(aes(x = trt, y = total_pest , fill = trt), stat = "identity", position = "dodge") + 
   scale_x_discrete(limits = c("1", "2", "3"),
                    labels = c("Control", "Depletion", "Augmentation"))
 
 
 
-hemip <- glmer.nb(Hemiptera ~ trt + (1|site), data = counts_clean)
-summary(hemip)
-hist(residuals(hemip))
-plot(x = counts_clean$trt, y = counts_clean$Hemiptera)
+# model of pest by pred
+# dropping trt because I can see that trt influences populations 
+plot(total_pest ~ Araneomorphae, counts_clean)
 
-cael <- glmer.nb(Caelifera ~ trt + (1|site), data = counts_clean)
-summary(cael)
-hist(residuals(cael))
-plot(x = counts_clean$trt, y = counts_clean$Caelifera)
+test <- glmer.nb(total_pest ~ Araneomorphae + (1|site), data = counts_clean)
+summary(test)
+hist(residuals(test))
 
-col <- glmer.nb(Coleoptera ~ trt + (1|site), data = counts_clean)
-summary(col)
-hist(residuals(col))
-plot(x = counts_clean$trt, y = counts_clean$Coleoptera)
-
-lep <- glmer.nb(Lepidoptera ~ trt + (1|site), data = counts_clean)
-summary(lep)
-hist(residuals(lep))
-plot(x = counts_clean$trt, y = counts_clean$Lepidoptera)
-
-
+test_2 <- glmer.nb(total_pest ~ Araneomorphae + trt + (1|site), data = counts_clean)
+summary(test_2)
+hist(residuals(test_2))
 
 # NMDS ####
 
