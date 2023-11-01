@@ -37,6 +37,11 @@ counts_clean <- counts %>%
   rowwise() %>% 
   mutate(total_pest = sum(Coleoptera, Hemiptera, Caelifera, Lepidoptera, na.rm = T))
 
+fig_df <- counts_clean %>% 
+  rename(Treatment = trt)
+
+
+
 # having a look at the spread of spiders and hemiptera
 # it would make sense that there would be higher counts in augmentation for both
 group_by(counts_clean, trt) %>% 
@@ -138,7 +143,7 @@ var(counts_clean$total_pest)
 
 library(lme4)
 # library(glmmTMB)
-library(emmeans)
+# library(emmeans)
 # want model of each population by trt with site as random effect 
 ?glmer
 spider_model <- glmer.nb(Araneomorphae ~ trt + (1|site), data = counts_clean)
@@ -177,14 +182,137 @@ ggplot(counts_clean)+
 # dropping trt because I can see that trt influences populations 
 plot(total_pest ~ Araneomorphae, counts_clean)
 
-test <- glmer.nb(total_pest ~ Araneomorphae + (1|site), data = counts_clean)
-summary(test)
-hist(residuals(test))
+total_interaction <- glmer.nb(total_pest ~ Araneomorphae + (1|site), data = counts_clean)
+summary(total_interaction)
+hist(residuals(total_interaction))
+
+ggplot(fig_df, aes(Araneomorphae, total_pest, color = Treatment, shape = Treatment))+
+  geom_point(size = 5)+
+  geom_smooth(method = lm, se = FALSE, fullrange = TRUE)+ 
+  scale_color_manual(labels = c("Control","Depletion","Augmentation"),values = c("#7570B3","#D95F02","#1B9E77"))+
+  scale_shape_manual(labels = c("Control","Depletion","Augmentation"), values = c(19,17,15))+
+  labs(title = "Total pest populations by total spider populations",
+       x = "Spider populations",
+       y = "Total pest population")+
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        plot.title = element_text(size = 26),
+        legend.key.height = unit(1, 'cm'),
+        legend.key.size = unit(4, 'cm'),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
+  
+
+# ggplot(counts_clean, aes(Araneomorphae, total_pest, color = trt))+
+#   geom_point(size = 6)+
+#   scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))
 
 # WITH trt, for fun
-test_2 <- glmer.nb(total_pest ~ Araneomorphae + trt + (1|site), data = counts_clean)
-summary(test_2)
-hist(residuals(test_2))
+# test_2 <- glmer.nb(total_pest ~ Araneomorphae + trt + (1|site), data = counts_clean)
+# summary(test_2)
+# hist(residuals(test_2))
+
+# models for each group ~ spider
+hem_model <- glmer.nb(Hemiptera ~ Araneomorphae + (1|site), data = counts_clean)
+summary(hem_model) # hemipterans increase with more spiders
+hist(residuals(hem_model))
+
+hem_plot<- ggplot(fig_df, aes(Araneomorphae, Hemiptera, color = Treatment, shape = Treatment))+
+  geom_point(size = 5)+
+  geom_smooth(method = lm, se = FALSE, fullrange = TRUE)+ 
+  scale_color_manual(labels = c("Control","Depletion","Augmentation"),values = c("#7570B3","#D95F02","#1B9E77"))+
+  scale_shape_manual(labels = c("Control","Depletion","Augmentation"), values = c(19,17,15))+
+  labs(title = "Hemipteran pest populations by total spider populations",
+       x = "Spider populations",
+       y = "Hemipteran population")+
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        plot.title = element_text(size = 26),
+        legend.key.height = unit(1, 'cm'),
+        legend.key.size = unit(4, 'cm'),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
+
+
+
+ceal_model <- glmer.nb(Caelifera ~ Araneomorphae + (1|site), data = counts_clean)
+summary(ceal_model) # cael increase with more spiders
+hist(residuals(ceal_model))
+
+cael_plot <- ggplot(fig_df, aes(Araneomorphae, Caelifera, color = Treatment, shape = Treatment))+
+  geom_point(size = 5)+
+  geom_smooth(method = lm, se = FALSE, fullrange = TRUE)+ 
+  scale_color_manual(labels = c("Control","Depletion","Augmentation"),values = c("#7570B3","#D95F02","#1B9E77"))+
+  scale_shape_manual(labels = c("Control","Depletion","Augmentation"), values = c(19,17,15))+
+  labs(title = "Caelifera pest populations by total spider populations",
+       x = "Spider populations",
+       y = "Caelifera population")+
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        plot.title = element_text(size = 26),
+        legend.key.height = unit(1, 'cm'),
+        legend.key.size = unit(4, 'cm'),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
+
+
+col_model <- glmer.nb(Coleoptera ~ Araneomorphae + (1|site), data = counts_clean)
+summary(col_model) # nothing 
+hist(residuals(col_model))
+
+col_plot <- ggplot(fig_df, aes(Araneomorphae, Coleoptera, color = Treatment, shape = Treatment))+
+  geom_point(size = 5)+
+  geom_smooth(method = lm, se = FALSE, fullrange = TRUE)+ 
+  scale_color_manual(labels = c("Control","Depletion","Augmentation"),values = c("#7570B3","#D95F02","#1B9E77"))+
+  scale_shape_manual(labels = c("Control","Depletion","Augmentation"), values = c(19,17,15))+
+  labs(title = "Coleoptera pest populations by total spider populations",
+       x = "Spider populations",
+       y = "Coleoptera population")+
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        plot.title = element_text(size = 26),
+        legend.key.height = unit(1, 'cm'),
+        legend.key.size = unit(4, 'cm'),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
+
+lep_model <- glmer.nb(Lepidoptera ~ Araneomorphae + (1|site), data = counts_clean)
+summary(lep_model) # nothing 
+hist(residuals(lep_model))
+
+lep_plot <- ggplot(fig_df, aes(Araneomorphae, Lepidoptera, color = Treatment, shape = Treatment))+
+  geom_point(size = 5)+
+  geom_smooth(method = lm, se = FALSE, fullrange = TRUE)+ 
+  scale_color_manual(labels = c("Control","Depletion","Augmentation"),values = c("#7570B3","#D95F02","#1B9E77"))+
+  scale_shape_manual(labels = c("Control","Depletion","Augmentation"), values = c(19,17,15))+
+  labs(title = "Lepidoptera pest populations by total spider populations",
+       x = "Spider populations",
+       y = "Lepidoptera population")+
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        plot.title = element_text(size = 26),
+        legend.key.height = unit(1, 'cm'),
+        legend.key.size = unit(4, 'cm'),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
+
+
+
 
 # NMDS ####
 
