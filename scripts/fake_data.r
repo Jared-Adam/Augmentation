@@ -100,7 +100,7 @@ bugs$Treatment <- as.factor(bugs$Treatment)
    theme(legend.position = "none")+
    scale_x_discrete(name = "Treatment",
                     limits = c("1", "2", "3"),
-                    labels = c("Control","Removal","Addition"))+
+                    labels = c("Control","Fewer Spiders","More Spiders"))+
    scale_y_continuous(name = "Total Damage (mm^2)")
  
  

@@ -37,8 +37,17 @@ counts_clean <- counts %>%
   rowwise() %>% 
   mutate(total_pest = sum(Coleoptera, Hemiptera, Caelifera, Lepidoptera, na.rm = T))
 
+counts_clean$trt <- as.factor(counts_clean$trt)
+counts_clean$site <- as.factor(counts_clean$site)
+
 fig_df <- counts_clean %>% 
-  rename(Treatment = trt)
+  rename(Treatment = trt) 
+
+# %>% 
+#   group_by(Treatment) %>% 
+#   mutate( mean = mean(Araneomorphae),
+#           var = var(Araneomorphae), # avg of sqaured differenes from the mean
+#           sd = sd(Araneomorphae))
 
 
 
@@ -48,6 +57,7 @@ group_by(counts_clean, trt) %>%
   summarise(
     count = n(), 
     mean = mean(Araneomorphae),
+    var = var(Araneomorphae), # avg of sqaured differenes from the mean
     sd = sd(Araneomorphae), 
     median = median(Araneomorphae), 
       IQR = IQR(Araneomorphae)
@@ -57,14 +67,21 @@ group_by(counts_clean, trt) %>%
   summarise(
     count = n(), 
     mean = mean(Hemiptera),
+    var = var(Hemiptera),
     sd = sd(Hemiptera), 
     median = median(Hemiptera), 
     IQR = IQR(Hemiptera)
   )
 
-counts_clean$trt <- as.factor(counts_clean$trt)
-counts_clean$site <- as.factor(counts_clean$site)
-
+group_by(counts_clean, trt) %>% 
+  summarise(
+    count = n(), 
+    mean = mean(total_pest),
+    var = var(total_pest),
+    sd = sd(total_pest), 
+    median = median(total_pest), 
+    IQR = IQR(total_pest)
+  )
 # Permanova ####
 # need a data matrix for just the groups of interest
 # vegdist needs numeric values
@@ -86,6 +103,12 @@ permanova_site
 
 permanovas_both <- adonis2(dist ~ trt*site, permutations = 999, method = "bray", data = counts_clean)
 permanovas_both
+
+####
+###
+##
+#
+# did not use this!
 
 #going to attempt the perm disp 
 # seeing whether differences are due to location and/ or dispersion
@@ -110,6 +133,10 @@ plot(trt.res.betadisper)
 # ?pairwise.adonis
 # #post-hoc
 # post_test <- pairwise.adonis2(dist ~ trt, data = counts_clean)
+#
+##
+###
+####
 
 # GLMM ####
 
@@ -150,16 +177,36 @@ spider_model <- glmer.nb(Araneomorphae ~ trt + (1|site), data = counts_clean)
 summary(spider_model)
 hist(residuals(spider_model))
 
+ggplot(fig_df, aes(x= Treatment, y = Araneomorphae, fill = Treatment))+
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
+  #geom_errorbar(aes(x=fig_df, ymin = mean-sd, ymax=mean + sd))+
+  scale_x_discrete(labels = c("Control","Depletion","Augmentation"))+
+  labs(title = "Spider Population x Treatment",
+       x = "Treatment",
+       y = "Spider populations")+
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        plot.title = element_text(size = 26),
+        legend.key.height = unit(1, 'cm'),
+        legend.key.size = unit(4, 'cm'),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
+  
+
 # this does not work
 # because trt is only three levels? 
-spider_emm <- emmeans(spider_model, "trt")
-pairs(spider_emm)
-
-ggplot(counts_clean)+
-  geom_bar(aes(x = trt, y = Araneomorphae , fill = trt), stat = "identity", position = "dodge") + 
-  scale_x_discrete(limits = c("1", "2", "3"),
-                   labels = c("Control", "Depletion", "Augmentation"))
-
+# spider_emm <- emmeans(spider_model, "trt")
+# pairs(spider_emm)
+# 
+# ggplot(counts_clean)+
+#   geom_bar(aes(x = trt, y = Araneomorphae , fill = trt), stat = "identity", position = "dodge") + 
+#   scale_x_discrete(limits = c("1", "2", "3"),
+#                    labels = c("Control", "Depletion", "Augmentation"))
+# 
 
 # ?glmmTMB
 # spider_model_2 <- glmmTMB(Araneomorphae ~ trt + (1|site), data = counts_clean, family = nbinom2)
@@ -171,11 +218,28 @@ ggplot(counts_clean)+
 pest_model <- glmer.nb(total_pest ~ trt + (1|site), data = counts_clean)
 summary(pest_model)
 plot(x = counts_clean$trt, y = counts_clean$total_pest)
-ggplot(counts_clean)+
-  geom_bar(aes(x = trt, y = total_pest , fill = trt), stat = "identity", position = "dodge") + 
-  scale_x_discrete(limits = c("1", "2", "3"),
-                   labels = c("Control", "Depletion", "Augmentation"))
-
+# ggplot(counts_clean)+
+#   geom_bar(aes(x = trt, y = total_pest , fill = trt), stat = "identity", position = "dodge") + 
+#   scale_x_discrete(limits = c("1", "2", "3"),
+#                    labels = c("Control", "Depletion", "Augmentation"))
+ggplot(fig_df, aes(x= Treatment, y = total_pest, fill = Treatment))+
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
+  #geom_errorbar(aes(x=fig_df, ymin = mean-sd, ymax=mean + sd))+
+  scale_x_discrete(labels = c("Control","Depletion","Augmentation"))+
+  labs(title = "Total Pest Population x Treatment",
+       x = "Treatment",
+       y = "Total Pest Population")+
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
+        axis.title.x = element_text(size = 22),
+        axis.title.y = element_text(size = 22),
+        plot.title = element_text(size = 26),
+        legend.key.height = unit(1, 'cm'),
+        legend.key.size = unit(4, 'cm'),
+        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 20))
 
 
 # model of pest by pred
@@ -322,6 +386,8 @@ lep_plot <- ggplot(fig_df, aes(Araneomorphae, Lepidoptera, color = Treatment, sh
 ord <- metaMDS(functional_groups, k = 2)
 ord$stress # stress = 0.14
 stressplot(ord)
+# screeplot(ord)
+# ?screeplot
 
 # 3D
 # ord_2 <- metaMDS(functional_groups, k = 3)
