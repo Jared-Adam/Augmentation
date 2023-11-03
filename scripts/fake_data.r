@@ -88,7 +88,7 @@ bugs$Treatment <- as.factor(bugs$Treatment)
  beans$trt <- as.factor(beans$trt)
  ggplot(beans, aes(trt, damage, fill = trt))+
    geom_boxplot(alpha = 0.6)+
-   scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
+   scale_fill_manual(values = c("#D95F02","#1B9E77"))+
    stat_boxplot(geom = 'errorbar',
                 width = 0.2,
                 size = 0.75)+
@@ -99,8 +99,8 @@ bugs$Treatment <- as.factor(bugs$Treatment)
    labs(title = 'Hypothesis plot: Total Damage by Treatment')+
    theme(legend.position = "none")+
    scale_x_discrete(name = "Treatment",
-                    limits = c("1", "2", "3"),
-                    labels = c("Control","Fewer Spiders","More Spiders"))+
+                    limits = c( "2", "3"),
+                    labels = c("Fewer Spiders","More Spiders"))+
    scale_y_continuous(name = "Total Damage (mm^2)")
  
  
