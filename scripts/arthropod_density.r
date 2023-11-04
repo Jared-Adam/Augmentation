@@ -246,7 +246,7 @@ ggplot(fig_df, aes(x= Treatment, y = total_pest, fill = Treatment))+
 # dropping trt because I can see that trt influences populations 
 plot(total_pest ~ Araneomorphae, counts_clean)
 
-total_interaction <- glmer.nb(total_pest ~ Araneomorphae + (1|site), data = counts_clean)
+total_interaction <- glmer.nb(total_pest ~ Araneomorphae + trt + (1|site), data = counts_clean)
 summary(total_interaction)
 hist(residuals(total_interaction))
 
