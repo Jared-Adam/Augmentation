@@ -463,26 +463,33 @@ w_o_hem <- counts_clean %>%
 wo1 <- glm.nb(total ~ Araneomorphae, data = w_o_hem)
 summary(wo1)
 hist(residuals(wo1))
+wo_hX2 <- (45.492-33.763)
 
 ggplot(w_o_hem, aes(Araneomorphae, total))+
   geom_point(size = 5, aes(color = trt))+
-  stat_poly_eq(size = 12)+
+  stat_poly_eq(size = 10)+
   geom_smooth(method = lm, se = TRUE, fullrange = TRUE, color = 'black')+ 
   scale_color_manual(labels = c("Control","Depletion","Augmentation"),values = c("#7570B3","#D95F02","#1B9E77"))+
   scale_shape_manual(labels = c("Control","Depletion","Augmentation"), values = c(19,17,15))+
-  labs(title = "All except hemipteran pest populations by total spider populations",
-       x = "Spider populations",
-       y = "pests population")+
-  theme_bw()+
-  theme(axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 20),
-        axis.title.x = element_text(size = 22),
-        axis.title.y = element_text(size = 22),
-        plot.title = element_text(size = 26),
-        legend.key.height = unit(1, 'cm'),
-        legend.key.size = unit(4, 'cm'),
-        legend.text = element_text(size = 18),
-        legend.title = element_text(size = 20))
+  labs(title = "No Hemiptera: Pest Populations x Total Spider Population",
+       subtitle = 'Year: 2023',
+       x = "Spider population",
+       y = "Pest population",
+       color = 'Treatment')+
+  theme(legend.position = "bottom",
+        legend.key.size = unit(.50, 'cm'),
+        legend.title = element_text('Treatment', size = 24),
+        legend.text = element_text(size = 24),
+        axis.text.x = element_text(size=26),
+        axis.text.y = element_text(size = 26),
+        axis.title = element_text(size = 32),
+        plot.title = element_text(size = 28),
+        plot.subtitle = element_text(size = 24), 
+        panel.grid.major.y = element_line(color = "darkgrey"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
+  annotate('text', x = 4, y = 25, label = 'p value < 0.001', size = 10)
 
 
 
