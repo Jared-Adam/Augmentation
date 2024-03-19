@@ -123,5 +123,7 @@ spider_sum <- now %>%
 ggplot(spider_sum, aes(x = name, y = value))+
   geom_bar(stat = 'identity', position = 'dodge')
 
+ggplot(spider_sum, aes(x = name, y = value))+
+  geom_point()
 
 # stats ####
