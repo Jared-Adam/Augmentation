@@ -20,7 +20,7 @@ timing <- c("total", "damaged") #new column to identify damage timing
 test <- beans_test %>% 
   group_by(leaf_plot) %>% 
   mutate(timing = timing) %>% # adding new timing column
-  select(leaf_plot, total_area, timing) # selecting the columns I want to work with
+  dplyr::select(leaf_plot, total_area, timing) # dplyr::selecting the columns I want to work with
 test
 
 ### omit anything above 10000
@@ -30,7 +30,7 @@ test_new <- test %>%
   group_by(leaf_plot) %>% 
   mutate(dmg_diff = total_area - lag(total_area)) %>% #subtract the first total_area value by the next unique/new total_area value. If lag() is left blank, it will subtract the next value. E.g., 1-2, 2-3, 3-4, 4-5, etc. 
   na.omit() %>% 
-  select(leaf_plot, dmg_diff) %>% 
+  dplyr::select(leaf_plot, dmg_diff) %>% 
   mutate(dmg_diff = abs(dmg_diff)) # these values came out to be negative, so I absolute value them 
 test_new
 
@@ -53,7 +53,7 @@ beans_new <- beans %>%
   group_by(leaf_plot) %>% 
   mutate(dmg_diff = total_area - lag(total_area)) %>% 
   na.omit() %>% 
-  select(leaf_plot, dmg_diff) %>% 
+  dplyr::select(leaf_plot, dmg_diff) %>% 
   mutate(dmg_diff = abs(dmg_diff)) %>% 
   mutate(across(c('dmg_diff'),round,2))
   
@@ -76,7 +76,7 @@ beans_split <- beans_sum
 
 beans_split[c('plot', 'trt')] <- str_split_fixed(beans_split$leaf_plot, '_',2)
 beans_final <- beans_split %>% 
- select(plot, trt, dmg_diff) %>% 
+ dplyr::select(plot, trt, dmg_diff) %>% 
   rename(damage = dmg_diff) %>% 
   arrange(plot) %>% 
   mutate(plot = as.numeric(plot)) %>% 
@@ -129,21 +129,27 @@ brewer.pal(n=3, name = "Dark2")
 
 
 ggplot(beans_final, aes(trt, damage, fill = trt))+
-  geom_boxplot(alpha = 0.6)+
+  geom_boxplot(alpha = 0.7)+
+  geom_point()+
   scale_fill_manual(values = c("#1B9E77","#7570B3","#D95F02"))+
   stat_boxplot(geom = 'errorbar',
                width = 0.2,
                size = 0.75)+
-  theme_light()+
-  theme(axis.text = element_text(size = 18), 
-        axis.title = element_text(size = 22),
-        plot.title = element_text(size = 24))+
-  labs(title = 'Total Damage by Treatment')+
-  theme(legend.position = "none")+
+  ylab(bquote('Total Damage'(mm ^2)))+
+  labs(title = 'Total Damage x Treatment')+
   scale_x_discrete(name = "Treatment",
-                   limits = c("Ctl", "Dep", "Aug"),
+                   limits = c("Dep", "Ctl", "Aug"),
                    labels = c("Control", "Depletion", "Augmentation"))+
-  scale_y_continuous(name = "Total Damage (mm^2)")
+  theme(legend.position = "none",
+        axis.text.x = element_text(size=26),
+        axis.text.y = element_text(size = 26),
+        axis.title = element_text(size = 32),
+        plot.title = element_text(size = 28),
+        plot.subtitle = element_text(size = 24), 
+        panel.grid.major.y = element_line(color = "darkgrey"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank())
+
   
 
 
