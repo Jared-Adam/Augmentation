@@ -9,6 +9,7 @@ library(performance)
 library(multcomp)
 library(ggpmisc)
 library(lmtest)
+library(ggrepel)
 
 
 # cleaning of the data ####
@@ -28,7 +29,7 @@ counts_clean <- counts %>%
          Caelifera = caelifera, 
          Lepidoptera = lepidoptera, 
          Araneomorphae = spiders) %>% 
-  select(-pentatomid, -hemiptera) %>% 
+  dplyr::select(-pentatomid, -hemiptera) %>% 
   mutate(site = case_when(plot == 100 ~ 1,
                            plot == 200 ~ 1,
                            plot == 300 ~ 2,
@@ -49,13 +50,6 @@ counts_clean$site <- as.factor(counts_clean$site)
 
 fig_df <- counts_clean %>% 
   rename(Treatment = trt) 
-
-# %>% 
-#   group_by(Treatment) %>% 
-#   mutate( mean = mean(Araneomorphae),
-#           var = var(Araneomorphae), # avg of sqaured differenes from the mean
-#           sd = sd(Araneomorphae))
-
 
 
 # having a look at the spread of spiders and hemiptera
@@ -101,7 +95,8 @@ dist <- vegdist(functional_groups, "bray")
 # standard = 999
 # dist object from above
 # running the distance values by treatment
-?adonis2
+
+# trt has sig
 permanova_trt <- adonis2(dist ~ trt, permutations = 999, method = "bray", data = counts_clean)
 permanova_trt
 
@@ -115,6 +110,68 @@ permanovas_both
 ###
 ##
 #
+# NMDS ####
+
+# metaMDS must be numeric
+# stress level?
+# 2 dimensional 
+ord <- metaMDS(functional_groups, k = 2)
+ord$stress # stress = 0.14
+stressplot(ord)
+
+
+# need to get site scores for ordination
+# I think I want display  = "sites"
+?scores
+scrs <- scores(ord, display = "sites")
+# adding my scores from metaMDS to their associated trts 
+scrs <- cbind(as.data.frame(scrs), trt = counts_clean$trt)
+scrs <- cbind(as.data.frame(scrs), site = counts_clean$site)
+
+
+
+# i want to add functional group to this df 
+# "species" = averaged site scores
+# as_tibble here gets rid of the name and replaces the groups with numbers != what I want
+functional_scores <- as.data.frame(scores(ord, "species"))
+functional_scores$species <- rownames(functional_scores)
+
+# going to chull the objects to get trts into their own shapes
+aug <- scrs[scrs$trt == "3",][chull(scrs[scrs$trt == "3",c("NMDS1", "NMDS2")]),]
+dep <- scrs[scrs$trt == "2",][chull(scrs[scrs$trt == "2",c("NMDS1", "NMDS2")]),]
+ctl <- scrs[scrs$trt == "1",][chull(scrs[scrs$trt == "1",c("NMDS1", "NMDS2")]),]
+
+hull.data <- rbind(aug, dep, ctl)
+as_tibble(hull.data) #trt = factor
+hull.data$trt <- as.factor(hull.data$trt)
+
+ggplot()+
+  geom_polygon(data = hull.data, (aes(x = NMDS1, y = NMDS2, group = trt, fill = trt)), alpha = 0.7)+
+  scale_fill_manual(name = "Treatment", labels = c('Control', 'Depletion', 'Agumentation'), values = c("#7570B3","#D95F02","#1B9E77"))+
+  geom_segment(data = functional_scores, aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), 
+                                             arrow = arrow(length = unit(0.25, "cm")),
+               color = "grey10", lwd = 0.7)+
+  geom_text_repel(data = functional_scores, aes(x = NMDS1, y = NMDS2, label = species), cex = 8, direction = "both",
+                  segment.size = 0.25)+
+  annotate("label", x = .1, y=.5, label ="Stress = 0.14, k = 2", size = 10)+
+  coord_equal()+
+  theme_bw()+
+  labs(title = "Arthropod Abundance x Treatment")+
+  theme(axis.text.x = element_blank(),  # remove x-axis text
+        axis.text.y = element_blank(), # remove y-axis text
+        axis.ticks = element_blank(),  # remove axis ticks
+        axis.title.x = element_blank(), # remove x-axis labels
+        axis.title.y = element_blank(), # remove y-axis labels
+        panel.background = element_blank(), 
+        panel.grid.major = element_blank(),  #remove major-grid labels
+        panel.grid.minor = element_blank(),  #remove minor-grid labels
+        plot.background = element_blank(),
+        plot.title = element_text(size = 28),
+    legend.position = 'bottom',
+    legend.title = element_text(size = 24),
+    legend.text = element_text(size = 24),
+    legend.key.size = unit(1.5, 'cm')
+  )
 
 # distribution ####
 
@@ -167,26 +224,26 @@ cld(sp_emm, Letters = letters)
 
 
 ggplot(fig_df, aes(x= Treatment, y = Araneomorphae, fill = Treatment))+
-  geom_bar(stat = "identity") +
+  geom_boxplot() +
+  geom_point(size = 2)+
   scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
   #geom_errorbar(aes(x=fig_df, ymin = mean-sd, ymax=mean + sd))+
-  scale_x_discrete(labels = c("Control","Depletion","Augmentation"))+
-  labs(title = "Spider Population x Treatment",
+  scale_x_discrete(limits = c(2, 1, 3),
+    labels = c("Control","Depletion","Augmentation"))+
+  labs(title = "Total Araneomorphae Population x Treatment",
        x = "Treatment",
-       y = "Spider populations")+
-  theme_bw()+
-  theme(axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 20),
-        axis.title.x = element_text(size = 22),
-        axis.title.y = element_text(size = 22),
-        plot.title = element_text(size = 26),
-        legend.key.height = unit(1, 'cm'),
-        legend.key.size = unit(4, 'cm'),
-        legend.text = element_text(size = 18),
-        legend.title = element_text(size = 20))+
-  annotate('text', x = 1, y = 75, label = 'b', size = 10)+
-  annotate('text', x = 2, y = 75, label = 'a', size = 10)+
-  annotate('text', x = 3, y = 75, label = 'b', size = 10)
+       y = "Araneomorphae population")+
+  theme(legend.position = 'none',
+        axis.text.x = element_text(size = 26),
+        axis.text.y = element_text(size = 26),
+        axis.title = element_text(size = 32),
+        plot.title = element_text(size = 26), 
+        panel.grid.major.y = element_line(color = "darkgrey"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank())+
+  annotate('text', x = 1, y = 10, label = 'a', size = 10)+
+  annotate('text', x = 2, y = 23, label = 'b', size = 10)+
+  annotate('text', x = 3, y = 32, label = 'b', size = 10)
 
 
 # pest model####
@@ -206,26 +263,25 @@ cld(p_emm, Letters = letters)
 
 
 ggplot(fig_df, aes(x= Treatment, y = total_pest, fill = Treatment))+
-  geom_bar(stat = "identity") +
+  geom_boxplot() +
   scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
   #geom_errorbar(aes(x=fig_df, ymin = mean-sd, ymax=mean + sd))+
-  scale_x_discrete(labels = c("Control","Depletion","Augmentation"))+
+  scale_x_discrete(limits = c(2,1,3),
+                   labels = c("Control","Depletion","Augmentation"))+
   labs(title = "Total Pest Population x Treatment",
        x = "Treatment",
-       y = "Total Pest Population")+
-  theme_bw()+
-  theme(axis.text.x = element_text(size = 20),
-        axis.text.y = element_text(size = 20),
-        axis.title.x = element_text(size = 22),
-        axis.title.y = element_text(size = 22),
-        plot.title = element_text(size = 26),
-        legend.key.height = unit(1, 'cm'),
-        legend.key.size = unit(4, 'cm'),
-        legend.text = element_text(size = 18),
-        legend.title = element_text(size = 20))+
-  annotate('text', x = 1, y = 75, label = 'b', size = 10)+
-  annotate('text', x = 2, y = 75, label = 'a', size = 10)+
-  annotate('text', x = 3, y = 75, label = 'b', size = 10)
+       y = "Pest population")+
+  theme(legend.position = 'none',
+        axis.text.x = element_text(size = 26),
+        axis.text.y = element_text(size = 26),
+        axis.title = element_text(size = 32),
+        plot.title = element_text(size = 26), 
+        panel.grid.major.y = element_line(color = "darkgrey"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank())+
+  annotate('text', x = 1, y = 78, label = 'a', size = 10)+
+  annotate('text', x = 2, y = 95, label = 'b', size = 10)+
+  annotate('text', x = 3, y = 155, label = 'b', size = 10)
 
 
 # spider ~ pest model ####
@@ -455,7 +511,7 @@ ggplot(fig_df, aes(Araneomorphae, Lepidoptera, color = Treatment, shape = Treatm
 
 # pests ~ spiders: WO hemiptera ####
 w_o_hem <- counts_clean %>% 
-  dplyr::select(-total_pest, -Hemiptera) %>% 
+  dplyr::dplyr::select(-total_pest, -Hemiptera) %>% 
   rowwise() %>% 
   mutate(total = sum(c_across(Coleoptera:Lepidoptera))) %>% 
   relocate(plot, trt, site)
@@ -493,76 +549,3 @@ ggplot(w_o_hem, aes(Araneomorphae, total))+
 
 
 
-# NMDS ####
-
-# metaMDS must be numeric
-# stress level?
-# 2 dimensional 
-ord <- metaMDS(functional_groups, k = 2)
-reord$stress # stress = 0.14
-stressplot(ord)
-# screeplot(ord)
-# ?screeplot
-
-# 3D
-# ord_2 <- metaMDS(functional_groups, k = 3)
-# ord_2$stress # stress = 0.06
-# stressplot(ord_2)
-# plot(ord_2, type = "t", choices = 2:3) 
-# devtools::install_github("AckerDWM/gg3D")
-# library(gg3D)
-
-
-# need to get site scores for ordination
-# I think I want display  = "sites"
-?scores
-scrs <- scores(ord, display = "sites")
-# adding my scores from metaMDS to their associated trts 
-scrs <- cbind(as.data.frame(scrs), trt = counts_clean$trt)
-scrs <- cbind(as.data.frame(scrs), site = counts_clean$site)
-
-
-
-# i want to add functional group to this df 
-# "species" = averaged site scores
-# as_tibble here gets rid of the name and replaces the groups with numbers != what I want
-functional_scores <- as.data.frame(scores(ord, "species"))
-functional_scores$species <- rownames(functional_scores)
-
-# going to chull the objects to get trts into their own shapes
-aug <- scrs[scrs$trt == "3",][chull(scrs[scrs$trt == "3",c("NMDS1", "NMDS2")]),]
-dep <- scrs[scrs$trt == "2",][chull(scrs[scrs$trt == "2",c("NMDS1", "NMDS2")]),]
-ctl <- scrs[scrs$trt == "1",][chull(scrs[scrs$trt == "1",c("NMDS1", "NMDS2")]),]
-
-hull.data <- rbind(aug, dep, ctl)
-as_tibble(hull.data) #trt = factor
-hull.data$trt <- as.factor(hull.data$trt)
-library(ggrepel)
-
-ggplot()+
-  geom_polygon(data = hull.data, (aes(x = NMDS1, y = NMDS2, group = trt, fill = trt)), alpha = 0.5)+
-  scale_fill_manual(name = "Treatment", labels = c('Control', 'Depletion', 'Agumentation'), values = c("#7570B3","#D95F02","#1B9E77"))+
-  geom_segment(data = functional_scores, aes(x = 0, xend = NMDS1, y = 0, yend = NMDS2), 
-                                             arrow = arrow(length = unit(0.25, "cm")),
-               color = "grey10", lwd = 0.3)+
-  geom_text_repel(data = functional_scores, aes(x = NMDS1, y = NMDS2, label = species), cex = 8, direction = "both",
-                  segment.size = 0.25)+
-  annotate("label", x = 0, y=.5, label ="Stress: 0.1380172", size = 6)+
-  coord_equal()+
-  theme_bw()+
-  labs(title = "Arthropod abundance by treatment")+
-  theme(axis.text.x = element_blank(),  # remove x-axis text
-        axis.text.y = element_blank(), # remove y-axis text
-        axis.ticks = element_blank(),  # remove axis ticks
-        axis.title.x = element_blank(), # remove x-axis labels
-        axis.title.y = element_blank(), # remove y-axis labels
-        panel.background = element_blank(), 
-        panel.grid.major = element_blank(),  #remove major-grid labels
-        panel.grid.minor = element_blank(),  #remove minor-grid labels
-        plot.background = element_blank(),
-        plot.title = element_text(size = 22))+
-  theme(
-    legend.title = element_text(size = 20),
-    legend.text = element_text(size = 18),
-    legend.key.size = unit(1.5, 'cm')
-  )
