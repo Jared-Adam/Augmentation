@@ -12,10 +12,14 @@ library(multcomp)
 library(ggpmisc)
 library(lmtest)
 library(RColorBrewer)
+library(flextable)
+library(lmtest)
+library(MASS)
 
 # data ####
 sweeps <- beans_sweeps
-
+colnames(sweeps)
+unique(sweeps$Date)
 # wrangling ####
 now <- sweeps %>%
   group_by(Date) %>% 
@@ -64,6 +68,12 @@ groups %>%
   rowwise() %>% 
   mutate(totals = sum(c_across(spiders:ensif)))
 
+#
+##
+###
+
+# some stuff for a plot later on 
+
 group_sum <- groups %>%  
   summarise(spiders = sum(spiders),
             beetle_preds = sum(beetle_preds), 
@@ -73,6 +83,32 @@ group_sum <- groups %>%
             ensifera = sum(ensif)) %>% 
   pivot_longer(
     cols = where(is.numeric))
+
+group_mean <- groups %>%  
+  summarise(spiders = mean(spiders),
+            beetle_preds = mean(beetle_preds), 
+            formicid = mean(Formicidae), 
+            lacewing = mean(Hemerobiidae),
+            hemip_pred = mean(pred_hem),
+            ensifera = mean(ensif)) %>% 
+  pivot_longer(
+    cols = where(is.numeric))
+
+group_mean_plot <- groups %>% 
+  pivot_longer(
+    where(is.numeric)
+  ) %>% 
+  group_by(name) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value) ,
+            n = n(), 
+            se = sd/sqrt(n)) %>% 
+  filter(name != 'Hemerobiidae', name != 'Syrphidae', name != 'Thrips', name != 'cael', name != 'other_beetle',name !='other_hem')
+
+###
+##
+#
+
 
 groups %>% 
   group_by(year) %>% 
@@ -88,7 +124,15 @@ groups %>%
 ggplot(group_sum, aes(x = name, y = value))+
   geom_bar(stat = 'identity', position = 'dodge')
 
+###
+##
+#
+
+
+
+
 # spiders only ####
+
 spider_long_sum <- now %>% 
   ungroup() %>% 
   dplyr::select(date, year, Plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
@@ -134,6 +178,34 @@ spider_plot_sum <- now %>%
   pivot_longer(
     cols = where(is.numeric)
   )
+### plot df 
+
+spider_plot <- now %>% 
+  ungroup() %>% 
+  dplyr::select(date, year, Plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
+                Araneidae,Liniphiidae) %>% 
+  mutate(Linyphiidae = Liniphiidae + Linyphiidae,
+         Mysmenidae = Mysemindae + Mysmenidae) %>%
+  dplyr::select(-Liniphiidae, -Mysemindae) %>% 
+  mutate(trt = case_when(Plot %in% c('101','203','304','401','503') ~ '1',
+                         Plot %in% c('102', '201','303','402','502') ~ '3',
+                         Plot %in% c('103','204','302','403','501') ~ '2',
+                         Plot %in% c('104','202','301','404','504') ~ '4')) %>%
+  relocate(date, year, Plot, trt) %>% 
+  mutate_at(vars(1:4), as.factor) %>%  
+  mutate(Plot = as.factor(Plot)) %>% 
+  pivot_longer(
+    cols = where(is.numeric)
+  ) %>% 
+  group_by(name) %>% 
+  summarise(mean = mean(value), 
+            sd = sd(value),
+            n = n(),
+            se = sd/sqrt(n))
+
+###
+
+
 
 spider_wide <- now %>% 
   ungroup() %>% 
@@ -151,7 +223,87 @@ spider_wide <- now %>%
   mutate_at(vars(1:4), as.factor) 
 
 
+
+# need to append empty rows to time points to ensure that all dates have n = n 
+
+test_df <- spider_wide %>% 
+  group_by(date, year, plot) %>% 
+  summarise(
+    Linyphiidae = sum(Linyphiidae),
+    Thomisidae = sum(Thomisidae),
+    Lycosidae = sum(Lycosidae),
+    Mysmenidae = sum(Mysmenidae),
+    Salticidae = sum(Salticidae),
+    Tetragnathidae = sum(Tetragnathidae),
+    Araneidae = sum(Araneidae)
+  )
+
+
+# creating the dfs for the missing data 
+
+t1 <- test_df %>% 
+  filter(date == '2022-07-01')
+
+t1_append <- data.frame(date = '2022-07-01',
+           year = '2022',
+           plot = c('101','102','103','201','202','203','204','301','302','303','401','402','403','404',
+                    '501','502','503')
+           )
+
+t1_fixed <-
+  rbind(one, hm) %>% 
+  replace(is.na(.),0) %>% 
+  arrange(plot)
+
+t2 <- test_df %>% 
+  filter(date =='2023-06-28')
+unique(t2$plot)
+
+t2_append <- data.frame(date = '2023-06-28',
+                        year = '2023',
+                        plot = c('104','204'))
+
+t2_fixed <- rbind(t2, t2_append)%>% 
+  replace(is.na(.),0) %>% 
+  arrange(plot) 
+
+# removing then adding for plot
+
+spider_data <- test_df %>%   
+  filter(date != '2023-05-04', date != '2023-05-22', date != '2023-06-28', date != '2022-07-01') 
+
+spider_data_plot <- rbind(spider_data, t1_fixed, t2_fixed) %>% 
+  mutate(spiders = Linyphiidae + Thomisidae + Mysmenidae + Salticidae + Tetragnathidae + Araneidae) %>% 
+  mutate(block = case_when(plot %in% c('101', '102', '103', '104') ~ '1',
+                           plot %in% c('201', '202', '203', '204') ~ '2',
+                           plot %in% c('301', '302', '303', '304') ~ '3',
+                           plot %in% c('401', '402', '403', '404') ~ '4',
+                           plot %in% c('501', '502', '503', '504') ~ '5'),
+         block = as.factor(block)) %>%
+  group_by(date) %>% 
+  summarise(mean = mean(spiders),
+            sd = sd(spiders),
+            n = n(), 
+            se = sd/sqrt(n))
+  
+# removing then adding for the models
+  
+spider_mo <- test_df %>%   
+  filter(date != '2023-05-04', date != '2023-05-22', date != '2023-06-28', date != '2022-07-01') 
+
+spider_model <- rbind(spider_model, t1_fixed, t2_fixed) %>% 
+  mutate(spiders = Linyphiidae + Thomisidae + Mysmenidae + Salticidae + Tetragnathidae + Araneidae) %>% 
+  mutate(block = case_when(plot %in% c('101', '102', '103', '104') ~ '1',
+                           plot %in% c('201', '202', '203', '204') ~ '2',
+                           plot %in% c('301', '302', '303', '304') ~ '3',
+                           plot %in% c('401', '402', '403', '404') ~ '4',
+                           plot %in% c('501', '502', '503', '504') ~ '5')) %>% 
+  mutate_at(vars(1:3), as.factor)
+
+
+
 # stats ####
+# individual populations
 # all groups ~ trt
 groups
 
@@ -160,6 +312,8 @@ tukey_group <- sapply(aov_group, function(x) TukeyHSD(x , 'trt', ordered = TRUE)
 # this is nice 
 
 aov_group_df <- do.call(rbind, lapply(aov_group, broom::tidy))
+aov_group_df %>% 
+  print(n = Inf)
 # this df is hard to look at
 tukey_group_df <- as.data.frame(do.call(rbind, Map(cbind, Name = names(tukey_group), tukey_group)))
 
@@ -187,8 +341,73 @@ gdf <- add_header_lines(gdf,
                         values = "T.test results for group counts")
 autofit(gdf) %>% 
   save_as_docx(path = 'T.test results for group counts.docx')
+####
+###
+##
+#
+
+perm_df <- spider_model %>% 
+  dplyr::select(-spiders) %>% 
+  group_by(date, year, plot) %>% 
+  summarise(
+    Linyphiidae = sum(Linyphiidae),
+    Thomisidae = sum(Thomisidae),
+    Lycosidae = sum(Lycosidae),
+    Mysmenidae = sum(Mysmenidae),
+    Salticidae = sum(Salticidae),
+    Tetragnathidae = sum(Tetragnathidae),
+    Araneidae = sum(Araneidae)
+  )
+unique(perm_df$date)
+str(perm_df)
+
+spider_no_zero <- perm_df[rowSums(perm_df[4:10])>0,]
+spider_fams <- spider_no_zero[4:10]
+
+spider_dist <- vegdist(spider_fams, 'bray')
+adonis2(spider_dist ~ year + date, permutations = factorial(10), method = 'bray', data = spider_no_zero)
+
+# Df SumOfSqs      R2      F   Pr(>F)   
+# Df SumOfSqs      R2      F    Pr(>F)    
+# year      1   0.9882 0.06353 3.2100 0.0135601 *  
+#   date      2   1.9450 0.12505 3.1592 0.0009317 ***
+#   Residual 41  12.6211 0.81142                     
+# Total    44  15.5543 1.00000   
+
+# which year had the most?
+# which trt had the most?
+
+unique(spider_model$year)
+spider_model %>% 
+  summarise(var = var(spiders), 
+            mean = mean(spiders))
+# gosh this is close. Going to stick with Poisson
+
+m <- glm.nb(spiders ~ date ,
+          data = spider_model)
+
+p <- glm(spiders ~ date, 
+           data = spider_model,
+           family = poisson)
+
+lrtest(m, p)
+
+summary(p)
+hist(residuals(p))
+cld(emmeans(p, ~date), Letters = letters)
 
 
+# date       emmean    SE  df asymp.LCL asymp.UCL .group
+# 2022-07-01 -2.996 0.707 Inf   -4.3816    -1.610  a    
+# 2023-06-28 -0.799 0.236 Inf   -1.2605    -0.337   b   
+# 2023-07-26  0.336 0.189 Inf   -0.0339     0.707    c  
+# 2022-08-12  0.668 0.160 Inf    0.3540     0.982    c  
+
+
+####
+###
+##
+#
 
 
 spider_wide
@@ -229,21 +448,29 @@ autofit(sdf) %>%
 
 
 # plots ####
+spider_plot_sum %>% 
+  group_by(name) %>% 
+  summarise(mean = mean(value), 
+            sd = sd(value),
+            n = n(),
+            se = sd/sqrt(n))
+
 display.brewer.pal(n = 8, name = 'Dark2')
 brewer.pal(n = 8, name = 'Dark2')
 
-
 colors <- c(Thomisidae = "#666666", Salticidae="#E6AB02", Tetragnathidae="#A6761D", Araneidae="#1B9E77", 
             Linyphiidae="#D95F02", Lycosidae="#7570B3", Mysmenidae="#E7298A")
-ggplot(spider_plot_sum, aes(x = name, y = value))+
+ggplot(spider_plot, aes(x = name, y = mean))+
   geom_bar(position = 'dodge', stat = 'identity', aes(fill = name), alpha = 0.7)+
   scale_x_discrete(limits = c("Thomisidae", "Salticidae", "Tetragnathidae", "Araneidae", "Linyphiidae", "Lycosidae", 
                               "Mysmenidae"))+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se),
+                color = "black", alpha = 1, width = 0.2, linewidth = 1.5)+
   scale_fill_manual(values = colors)+
-  labs(title = 'Araneomorphae Family Counts',
+  labs(title = 'Average Araneomorphae Family Counts',
        subtitle = 'Years: 2022-2023',
        x = 'Family name')+
-  ylab(bquote('Counts / 250'(ft ^2)))+
+  ylab(bquote('Average Counts / 250'(ft ^2)))+
   theme(legend.position = 'none',
         axis.text.x = element_text(size=26),
         axis.text.y = element_text(size = 26),
@@ -254,21 +481,25 @@ ggplot(spider_plot_sum, aes(x = name, y = value))+
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
-  annotate('text', x = 1, y = 35, label = 'a', size = 10)+
-  annotate('text', x = 7 , y = 5, label = 'b', size = 10)
+  annotate('text', x = 1, y = .16, label = 'a', size = 10)+
+  annotate('text', x = 7 , y = .16, label = 'b', size = 10)
 
 
 group_sum
+group_mean
+group_mean_plot
 
-ggplot(group_sum, aes(x = name, y = value))+
+ggplot(group_mean_plot, aes(x = name, y = mean))+
   geom_bar(position = 'dodge', stat = 'identity', aes(fill = name), alpha = 0.7)+
   scale_fill_brewer(palette = 'Dark2')+
-  scale_x_discrete(limits = c("spiders", "beetle_preds", "ensifera", "formicid", "lacewing", "hemip_pred"),
+  scale_x_discrete(limits = c("spiders", "beetle_preds", "ensif", "Formicidae", "Hesperiidae", "pred_hem"),
                    labels = c("Araneomorphae","Coleoptera", "Ensifera", "Formicidae", "Neuroptera", "Hemiptera"))+
-  labs(title = 'Sweep Net Counts',
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se),
+                color = "black", alpha = 1, width = 0.2, linewidth = 1.5)+
+  labs(title = 'Average Sweep Net Counts x Group',
        subtitle = 'Years: 2022-2023',
-       x = 'Family name')+
-  ylab(bquote('Total counts / 250'(ft ^2)))+
+       x = 'Group name')+
+  ylab(bquote('Average counts / 250'(ft ^2)))+
   theme(legend.position = 'none',
         axis.text.x = element_text(size=26),
         axis.text.y = element_text(size = 26),
@@ -279,9 +510,31 @@ ggplot(group_sum, aes(x = name, y = value))+
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
-  annotate('text',  x = 1, y = 95, label = 'a', size = 10)+
-  annotate('text', x = 6, y = 5, label = 'b', size = 10)
+  annotate('text',  x = 1, y = 0.35, label = 'a', size = 10)+
+  annotate('text', x = 6, y = 0.35, label = 'b', size = 10)
   
 
-
+ggplot(spider_only, aes(factor(date), mean))+
+  geom_bar(stat = 'identity', position = 'dodge', aes(fill = date), alpha = 0.7)+
+  scale_fill_brewer(palette = 'Dark2')+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se),
+                color = "black", alpha = 1, width = 0.2, linewidth = 1.5)+
+  labs(title = 'Mean Araneomoprhae x Sampling Date',
+       subtitle = 'Years: 2022-2023',
+       x = 'Sampling Date', 
+       y = 'Mean Population')+
+  theme(legend.position = 'none',
+        axis.text.x = element_text(size=26),
+        axis.text.y = element_text(size = 26),
+        axis.title = element_text(size = 32),
+        plot.title = element_text(size = 28),
+        plot.subtitle = element_text(size = 24), 
+        panel.grid.major.y = element_line(color = "darkgrey"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
+  annotate('text',  x = 1, y = 2.4, label = 'a', size = 10)+
+  annotate('text', x = 2, y = 2.4, label = 'c', size = 10)+
+  annotate('text', x = 3, y = 2.4, label = 'b', size = 10)+
+  annotate('text', x = 4, y = 2.4, label = 'c', size = 10)
 
