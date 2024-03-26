@@ -1,7 +1,8 @@
 # augmentation exp
 # packages ####
 library(tidyverse)
-
+library(ggpubr)
+library(RColorBrewer)
 
 # data ####
 beans <- as_tibble(soybean_damage)
@@ -89,18 +90,8 @@ as_tibble(beans_final)
 
 unique(beans_final$trt)
 
-# normality 
-?shapiro.test
-shapiro.test(beans_final$damage)
+# stats ####
 
-# beans_final$damage <- log10(beans_final$damage)
-
-qqnorm(beans_final$damage)
-
-hist(beans_final$damage)
-
-##
-?aov
 model <- aov(damage ~ trt, beans_final)
 summary(model)
 shapiro.test(model$residuals)
@@ -110,14 +101,14 @@ qqnorm(model$residuals)
 # vis of data with summary stats 
 group_by(beans_final, trt) %>% 
   summarise(
-    count = n(), 
+    n = n(), 
     mean = mean(damage),
     sd = sd(damage), 
-    median = median(damage), 
-      IQR = IQR(damage)
+    se = sd/sqrt(n)
   )
-library(ggpubr)
-library(RColorBrewer)
+
+
+# plots ####
 ggboxplot(beans_final, x = 'trt', y = 'damage')
 
 display.brewer.all(colorblindFriendly = TRUE)
