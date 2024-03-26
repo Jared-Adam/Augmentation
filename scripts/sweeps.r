@@ -251,7 +251,7 @@ t1_append <- data.frame(date = '2022-07-01',
            )
 
 t1_fixed <-
-  rbind(one, hm) %>% 
+  rbind(t1, t1_append) %>% 
   replace(is.na(.),0) %>% 
   arrange(plot)
 
@@ -482,6 +482,11 @@ ggplot(spider_plot, aes(x = name, y = mean))+
         panel.grid.minor = element_blank(),
         plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
   annotate('text', x = 1, y = .16, label = 'a', size = 10)+
+  annotate('text', x = 2 , y = .16, label = 'ab', size = 10)+
+  annotate('text', x = 3 , y = .16, label = 'ab', size = 10)+
+  annotate('text', x = 4 , y = .16, label = 'ab', size = 10)+
+  annotate('text', x = 5 , y = .16, label = 'a', size = 10)+
+  annotate('text', x = 6 , y = .16, label = 'ab', size = 10)+
   annotate('text', x = 7 , y = .16, label = 'b', size = 10)
 
 
@@ -511,6 +516,10 @@ ggplot(group_mean_plot, aes(x = name, y = mean))+
         panel.grid.minor = element_blank(),
         plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
   annotate('text',  x = 1, y = 0.35, label = 'a', size = 10)+
+  annotate('text', x = 2, y = 0.35, label = 'ab', size = 10)+
+  annotate('text', x = 3, y = 0.35, label = 'ab', size = 10)+
+  annotate('text', x = 4, y = 0.35, label = 'ab', size = 10)+
+  annotate('text', x = 5, y = 0.35, label = 'ab', size = 10)+
   annotate('text', x = 6, y = 0.35, label = 'b', size = 10)
   
 

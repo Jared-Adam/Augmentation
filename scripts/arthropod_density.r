@@ -96,14 +96,14 @@ dist <- vegdist(functional_groups, "bray")
 # dist object from above
 # running the distance values by treatment
 
-# trt has sig
-permanova_trt <- adonis2(dist ~ trt, permutations = 999, method = "bray", data = counts_clean)
+# trt has sig, use this
+permanova_trt <- adonis2(dist ~ trt, permutations = factorial(10), method = "bray", data = counts_clean)
 permanova_trt
 
 permanova_site <- adonis2(dist ~ site, permutations = 999, method = "bray", data = counts_clean )
 permanova_site
 
-permanovas_both <- adonis2(dist ~ trt*site, permutations = 999, method = "bray", data = counts_clean)
+permanovas_both <- adonis2(dist ~ trt+site, permutations = 999, method = "bray", data = counts_clean)
 permanovas_both
 
 ####
@@ -245,6 +245,21 @@ ggplot(fig_df, aes(x= Treatment, y = Araneomorphae, fill = Treatment))+
   annotate('text', x = 2, y = 23, label = 'b', size = 10)+
   annotate('text', x = 3, y = 32, label = 'b', size = 10)
 
+# for paper
+fig_df %>% 
+  pivot_longer(
+    cols = Araneomorphae
+  ) %>% 
+  group_by(Treatment) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value),
+            n = n(), 
+            se = sd/sqrt(n))
+# Treatment  mean    sd     n    se
+# <fct>     <dbl> <dbl> <int> <dbl>
+#   1 1         12.7   8.25    11 2.49 
+# 2 2          5.45  2.70    11 0.813
+# 3 3         16.7   7.06    11 2.13 
 
 # pest model####
 p0 <- glmer.nb(total_pest ~ 
@@ -264,6 +279,7 @@ cld(p_emm, Letters = letters)
 
 ggplot(fig_df, aes(x= Treatment, y = total_pest, fill = Treatment))+
   geom_boxplot() +
+  geom_point(size = 2)+
   scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
   #geom_errorbar(aes(x=fig_df, ymin = mean-sd, ymax=mean + sd))+
   scale_x_discrete(limits = c(2,1,3),
@@ -283,6 +299,22 @@ ggplot(fig_df, aes(x= Treatment, y = total_pest, fill = Treatment))+
   annotate('text', x = 2, y = 95, label = 'b', size = 10)+
   annotate('text', x = 3, y = 155, label = 'b', size = 10)
 
+# for paper
+fig_df %>% 
+  pivot_longer(
+    cols = total_pest
+  ) %>% 
+  group_by(Treatment) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value),
+            n = n(), 
+            se = sd/sqrt(n))
+  
+# Treatment  mean    sd     n    se
+# <fct>     <dbl> <dbl> <int> <dbl>
+#   1 1          66    57.1    11 17.2 
+# 2 2          36    19.4    11  5.86
+# 3 3          93.8  38.6    11 11.6 
 
 # spider ~ pest model ####
 
@@ -334,7 +366,7 @@ ggplot(fig_df, aes(Araneomorphae, total_pest))+
   stat_poly_eq(size = 10)+
   labs(title = "Total Pest Population x Total Spider Population",
        subtitle = 'Year: 2023',
-       x = "Spider population",
+       x = "Araneomorphae population",
        y = "Total pest population")+
   theme(legend.position = "bottom",
         legend.key.size = unit(.50, 'cm'),
