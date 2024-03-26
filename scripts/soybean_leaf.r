@@ -1,6 +1,9 @@
 # augmentation exp
-
+# packages ####
 library(tidyverse)
+
+
+# data ####
 beans <- as_tibble(soybean_damage)
 beans
 
@@ -102,12 +105,6 @@ model <- aov(damage ~ trt, beans_final)
 summary(model)
 shapiro.test(model$residuals)
 qqnorm(model$residuals)
-##
-
-
-##
-# if damage is not normal 
-kruskal.test(damage ~ trt, data = beans_final)
 ##
 
 # vis of data with summary stats 
