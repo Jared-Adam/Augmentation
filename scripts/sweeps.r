@@ -56,12 +56,33 @@ groups <- now %>%
                   -Elateridae,-Nitidulidae, -Chrysomelidae, -Heteroptera ,- Pentatomidae ,- Auchenorrhynca ,-Sternorrhyncha,
                 - Aphidae, -Geocoridae, -Caelifera, -Acrididae, -Ensifera, -Gryllidae, -Date) %>% 
   rename(plot = Plot) %>%
+  mutate(plot = case_when(plot == '308' ~ '302',
+                          .default = as.factor(plot))) %>% 
   mutate(trt = case_when(plot %in% c('101','203','304','401','503') ~ '1',
                          plot %in% c('102', '201','303','402','502') ~ '3',
                          plot %in% c('103','204','302','403','501') ~ '2',
                          plot %in% c('104','202','301','404','504') ~ '4')) %>% 
   relocate(date, year, plot, trt,  spiders, beetle_preds, other_beetle) %>% 
   mutate_at(vars(1:4), as.factor)
+
+# I am attempting to make then values constant since I took double the samples in 2023
+g_22 <- groups %>% 
+  filter(year == '2022') 
+g_23 <- groups %>% 
+  filter(year == '2023') %>% 
+  mutate_if(is.numeric, ~ . * 0.5)
+
+groups <- rbind(g_22, g_23)
+# new_group_sum <- new_group %>%  
+#   summarise(spiders = sum(spiders),
+#             beetle_preds = sum(beetle_preds), 
+#             formicid = sum(Formicidae), 
+#             lacewing = sum(Hemerobiidae),
+#             hemip_pred = sum(pred_hem),
+#             ensifera = sum(ensif)) %>% 
+#   pivot_longer(
+#     cols = where(is.numeric))
+# 
 
 groups %>% 
   group_by(date) %>% 
@@ -73,6 +94,8 @@ groups %>%
 ###
 
 # some stuff for a plot later on 
+
+
 
 group_sum <- groups %>%  
   summarise(spiders = sum(spiders),
@@ -132,6 +155,20 @@ ggplot(group_sum, aes(x = name, y = value))+
 
 
 # spiders only ####
+# accounting for the number of samples in 2023 
+
+now_22 <- now %>% 
+  filter(year == '2022') %>% 
+  mutate(Plot = as.factor(Plot))
+now_23 <- now %>% 
+  ungroup() %>% 
+  filter(year == '2023') %>% 
+  mutate(Plot = as.factor(Plot)) %>% 
+  mutate_if(is.numeric, ~ . *0.5)
+
+now <- rbind(now_22, now_23)
+
+
 
 spider_long_sum <- now %>% 
   ungroup() %>% 
@@ -291,7 +328,7 @@ spider_data_plot <- rbind(spider_data, t1_fixed, t2_fixed) %>%
 spider_mo <- test_df %>%   
   filter(date != '2023-05-04', date != '2023-05-22', date != '2023-06-28', date != '2022-07-01') 
 
-spider_model <- rbind(spider_model, t1_fixed, t2_fixed) %>% 
+spider_model <- rbind(spider_mo, t1_fixed, t2_fixed) %>% 
   mutate(spiders = Linyphiidae + Thomisidae + Mysmenidae + Salticidae + Tetragnathidae + Araneidae) %>% 
   mutate(block = case_when(plot %in% c('101', '102', '103', '104') ~ '1',
                            plot %in% c('201', '202', '203', '204') ~ '2',
@@ -324,7 +361,7 @@ tukey_group_df <- as.data.frame(do.call(rbind, Map(cbind, Name = names(tukey_gro
 
 group_sum
 
-kruskal.test(value ~ name, data = group_sum)
+# kruskal.test(value ~ name, data = group_sum)
 gt <- as.data.frame(dunn.test::dunn.test(group_sum$value, group_sum$name))
 
 gdf <- flextable(gt) %>% 
@@ -378,9 +415,14 @@ adonis2(spider_dist ~ year + date, permutations = factorial(10), method = 'bray'
 # which trt had the most?
 
 unique(spider_model$year)
+# using these values for model selection and for the paper values
 spider_model %>% 
   summarise(var = var(spiders), 
-            mean = mean(spiders))
+            mean = mean(spiders),
+            sd = sd(spiders),
+            n = n(),
+            se = sd/sqrt(n)
+            )
 # gosh this is close. Going to stick with Poisson
 
 m <- glm.nb(spiders ~ date ,
@@ -396,7 +438,15 @@ summary(p)
 hist(residuals(p))
 cld(emmeans(p, ~date), Letters = letters)
 
+# date       emmean    SE  df asymp.LCL asymp.UCL .group
+# 2022-07-01 -2.996 1.000 Inf    -4.956    -1.036  a    
+# 2023-06-28 -1.492 0.471 Inf    -2.416    -0.568  a    
+# 2023-07-26 -0.357 0.267 Inf    -0.880     0.167  a    
+# 2022-08-12  0.668 0.160 Inf     0.354     0.982   b  
 
+
+
+# old: before I changed the values 
 # date       emmean    SE  df asymp.LCL asymp.UCL .group
 # 2022-07-01 -2.996 0.707 Inf   -4.3816    -1.610  a    
 # 2023-06-28 -0.799 0.236 Inf   -1.2605    -0.337   b   
@@ -427,7 +477,7 @@ tukey_fam_df <- as.data.frame(do.call(rbind, Map(cbind, Name = names(tukey_fam),
 
 spider_plot_sum
 
-kruskal.test(value ~ name, data = spider_plot_sum)
+# kruskal.test(value ~ name, data = spider_plot_sum)
 st <- as.data.frame(dunn.test::dunn.test(spider_plot_sum$value, spider_plot_sum$name))
 
 sdf <- flextable(st) %>% 
@@ -481,13 +531,13 @@ ggplot(spider_plot, aes(x = name, y = mean))+
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
-  annotate('text', x = 1, y = .16, label = 'a', size = 10)+
-  annotate('text', x = 2 , y = .16, label = 'ab', size = 10)+
-  annotate('text', x = 3 , y = .16, label = 'ab', size = 10)+
-  annotate('text', x = 4 , y = .16, label = 'ab', size = 10)+
-  annotate('text', x = 5 , y = .16, label = 'a', size = 10)+
-  annotate('text', x = 6 , y = .16, label = 'ab', size = 10)+
-  annotate('text', x = 7 , y = .16, label = 'b', size = 10)
+  annotate('text', x = 1, y = .13, label = 'a', size = 10)+
+  annotate('text', x = 2 , y = .13, label = 'ab', size = 10)+
+  annotate('text', x = 3 , y = .13, label = 'ab', size = 10)+
+  annotate('text', x = 4 , y = .13, label = 'ab', size = 10)+
+  annotate('text', x = 5 , y = .13, label = 'a', size = 10)+
+  annotate('text', x = 6 , y = .13, label = 'ab', size = 10)+
+  annotate('text', x = 7 , y = .13, label = 'b', size = 10)
 
 
 group_sum
@@ -515,15 +565,15 @@ ggplot(group_mean_plot, aes(x = name, y = mean))+
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank(),
         plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
-  annotate('text',  x = 1, y = 0.35, label = 'a', size = 10)+
-  annotate('text', x = 2, y = 0.35, label = 'ab', size = 10)+
-  annotate('text', x = 3, y = 0.35, label = 'ab', size = 10)+
-  annotate('text', x = 4, y = 0.35, label = 'ab', size = 10)+
-  annotate('text', x = 5, y = 0.35, label = 'ab', size = 10)+
-  annotate('text', x = 6, y = 0.35, label = 'b', size = 10)
+  annotate('text',  x = 1, y = 0.28, label = 'a', size = 10)+
+  annotate('text', x = 2, y = 0.28, label = 'ab', size = 10)+
+  annotate('text', x = 3, y = 0.28, label = 'ab', size = 10)+
+  annotate('text', x = 4, y = 0.28, label = 'ab', size = 10)+
+  annotate('text', x = 5, y = 0.28, label = 'ab', size = 10)+
+  annotate('text', x = 6, y = 0.28, label = 'b', size = 10)
   
 
-ggplot(spider_only, aes(factor(date), mean))+
+ggplot(spider_data_plot, aes(factor(date), mean))+
   geom_bar(stat = 'identity', position = 'dodge', aes(fill = date), alpha = 0.7)+
   scale_fill_brewer(palette = 'Dark2')+
   geom_errorbar(aes(ymin = mean - se, ymax = mean + se),
@@ -543,7 +593,7 @@ ggplot(spider_only, aes(factor(date), mean))+
         panel.grid.minor = element_blank(),
         plot.caption = element_text(hjust = 0, size = 20, color = "grey25"))+
   annotate('text',  x = 1, y = 2.4, label = 'a', size = 10)+
-  annotate('text', x = 2, y = 2.4, label = 'c', size = 10)+
-  annotate('text', x = 3, y = 2.4, label = 'b', size = 10)+
-  annotate('text', x = 4, y = 2.4, label = 'c', size = 10)
+  annotate('text', x = 2, y = 2.4, label = 'b', size = 10)+
+  annotate('text', x = 3, y = 2.4, label = 'a', size = 10)+
+  annotate('text', x = 4, y = 2.4, label = 'a', size = 10)
 
