@@ -118,11 +118,10 @@ brewer.pal(n=3, name = "Dark2")
 
 ggplot(beans_final, aes(trt, damage, fill = trt))+
   geom_boxplot(alpha = 0.7)+
-  geom_point()+
+  geom_point(size = 4)+
   scale_fill_manual(values = c("#1B9E77","#7570B3","#D95F02"))+
   stat_boxplot(geom = 'errorbar',
-               width = 0.2,
-               size = 0.75)+
+               color = "black", alpha = 1, width = 0.2, linewidth = 1.5)+
   ylab(bquote('Total Damage'(mm ^2)))+
   labs(title = 'Total Damage x Treatment')+
   scale_x_discrete(name = "Treatment",

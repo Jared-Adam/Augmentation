@@ -312,9 +312,9 @@ tet <- ggplot(filter(long_trt_mean, name == 'tetrgnathidae'), aes(trt, mean))+
 
 figure <- ggarrange(thom, oxy, salt, tet)
 annotate_figure(figure, 
-                top = text_grob("Average Family Counts x Treatment", size = 28),
+                # top = text_grob("Average Family Counts x Treatment", size = 28),
                 bottom = text_grob("Treatment", size = 32),
-                left = text_grob("Average Counts / 2000 ft^2", size = 32, rot = 90))
+                left = text_grob("Average Counts / 61 m^2", size = 32, rot = 90))
 
 
 

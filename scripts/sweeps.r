@@ -520,7 +520,7 @@ ggplot(spider_plot, aes(x = name, y = mean))+
   labs(title = 'Average Araneomorphae Family Counts',
        subtitle = 'Years: 2022-2023',
        x = 'Family name')+
-  ylab(bquote('Average Counts / 250'(ft ^2)))+
+  ylab(bquote('Average Counts / 76'(m ^2)))+
   theme(legend.position = 'none',
         axis.text.x = element_text(size=26),
         axis.text.y = element_text(size = 26),
@@ -554,7 +554,7 @@ ggplot(group_mean_plot, aes(x = name, y = mean))+
   labs(title = 'Average Sweep Net Counts x Group',
        subtitle = 'Years: 2022-2023',
        x = 'Group name')+
-  ylab(bquote('Average counts / 250'(ft ^2)))+
+  ylab(bquote('Average counts / 76'(m ^2)))+
   theme(legend.position = 'none',
         axis.text.x = element_text(size=26),
         axis.text.y = element_text(size = 26),
