@@ -443,7 +443,14 @@ cld(emmeans(p, ~date), Letters = letters)
 # 2023-06-28 -1.492 0.471 Inf    -2.416    -0.568  a    
 # 2023-07-26 -0.357 0.267 Inf    -0.880     0.167  a    
 # 2022-08-12  0.668 0.160 Inf     0.354     0.982   b  
+library(broom)
+p_df <- as.data.frame(tidy(p))
+f_p <- flextable(p_df)
 
+f_p <- theme_zebra(f_p)
+
+autofit(f_p) %>% 
+  save_as_docx(path = 'spider_date.docx')
 
 
 # old: before I changed the values 
@@ -478,6 +485,7 @@ tukey_fam_df <- as.data.frame(do.call(rbind, Map(cbind, Name = names(tukey_fam),
 spider_plot_sum
 
 # kruskal.test(value ~ name, data = spider_plot_sum)
+dunn.test::dunn.test(spider_plot_sum$value, spider_plot_sum$name, altp = TRUE, list = TRUE,'none')
 st <- as.data.frame(dunn.test::dunn.test(spider_plot_sum$value, spider_plot_sum$name))
 
 sdf <- flextable(st) %>% 
