@@ -216,11 +216,10 @@ thom <- ggplot(filter(long_trt_mean, name == 'thomisidae'), aes(trt, mean))+
        x = 'Treatment')+
   ylab(bquote('Average Counts / 2000'(ft^2)))+
   theme(legend.position = 'none',
-        axis.ticks.x = element_blank(),
-        axis.text.y = element_text(size=26),
-        axis.text.x = element_blank(),
-        axis.title.y = element_blank(),
+        axis.text.x = element_text(size=26),
+        axis.text.y = element_text(size = 26),
         axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
         plot.title = element_text(size = 28),
         plot.subtitle = element_text(size = 24), 
         panel.grid.major.y = element_line(color = "darkgrey"),
@@ -270,7 +269,8 @@ salt <- ggplot(filter(long_trt_mean, name == 'salticidae'), aes(trt, mean))+
        x = 'Treatment')+
   ylab(bquote('Average Counts / 2000'(ft^2)))+
   theme(legend.position = 'none',
-        axis.text.x = element_text(size=26),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
         axis.text.y = element_text(size = 26),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
@@ -310,11 +310,11 @@ tet <- ggplot(filter(long_trt_mean, name == 'tetrgnathidae'), aes(trt, mean))+
   annotate('text', x = 2, y = 2.9, label = 'ab', size = 10)+
   annotate('text', x = 3, y = 2.9, label = 'b', size = 10)
 
-figure <- ggarrange(thom, oxy, salt, tet)
+figure <- ggarrange(oxy, salt, tet, thom )
 annotate_figure(figure, 
                 # top = text_grob("Average Family Counts x Treatment", size = 28),
                 bottom = text_grob("Treatment", size = 32),
-                left = text_grob("Average Counts / 61 m^2", size = 32, rot = 90))
+                left = text_grob("Average counts / 61 m^2", size = 32, rot = 90))
 
 
 

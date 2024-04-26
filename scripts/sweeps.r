@@ -37,7 +37,14 @@ now <- sweeps %>%
   dplyr::select(-Genus, -adult_juvenile, -Order, -Family, -Infraorder, -na) %>% 
   replace(is.na(.),0) %>% 
   mutate(date = as.Date(Date, "%m/%d/%Y"),
-         year = format(date , "%Y"))
+         year = format(date , "%Y"))%>% 
+  rename(plot = Plot) %>%
+  mutate(plot = case_when(plot == '308' ~ '302',
+                          .default = as.factor(plot))) %>% 
+  mutate(trt = case_when(plot %in% c('101','203','304','401','503') ~ '1',
+                         plot %in% c('102', '201','303','402','502') ~ '3',
+                         plot %in% c('103','204','302','403','501') ~ '2',
+                         plot %in% c('104','202','301','404','504') ~ '4')) 
 
 groups <- now %>% 
   ungroup() %>% 
@@ -55,13 +62,6 @@ groups <- now %>%
                 -Cerambicidae,-Tenebrionidae,-Mordellidae,-Chrysomedlidae,-Curculionidae,-Scarabaeidae,
                   -Elateridae,-Nitidulidae, -Chrysomelidae, -Heteroptera ,- Pentatomidae ,- Auchenorrhynca ,-Sternorrhyncha,
                 - Aphidae, -Geocoridae, -Caelifera, -Acrididae, -Ensifera, -Gryllidae, -Date) %>% 
-  rename(plot = Plot) %>%
-  mutate(plot = case_when(plot == '308' ~ '302',
-                          .default = as.factor(plot))) %>% 
-  mutate(trt = case_when(plot %in% c('101','203','304','401','503') ~ '1',
-                         plot %in% c('102', '201','303','402','502') ~ '3',
-                         plot %in% c('103','204','302','403','501') ~ '2',
-                         plot %in% c('104','202','301','404','504') ~ '4')) %>% 
   relocate(date, year, plot, trt,  spiders, beetle_preds, other_beetle) %>% 
   mutate_at(vars(1:4), as.factor)
 
@@ -158,12 +158,10 @@ ggplot(group_sum, aes(x = name, y = value))+
 # accounting for the number of samples in 2023 
 
 now_22 <- now %>% 
-  filter(year == '2022') %>% 
-  mutate(Plot = as.factor(Plot))
+  filter(year == '2022') 
 now_23 <- now %>% 
   ungroup() %>% 
-  filter(year == '2023') %>% 
-  mutate(Plot = as.factor(Plot)) %>% 
+  filter(year == '2023')  %>% 
   mutate_if(is.numeric, ~ . *0.5)
 
 now <- rbind(now_22, now_23)
@@ -172,13 +170,13 @@ now <- rbind(now_22, now_23)
 
 spider_long_sum <- now %>% 
   ungroup() %>% 
-  dplyr::select(date, year, Plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
+  dplyr::select(date, year, plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
            Araneidae,Liniphiidae) %>% 
   mutate(Linyphiidae = Liniphiidae + Linyphiidae,
          Mysmenidae = Mysemindae + Mysmenidae) %>%
   dplyr::select(-Liniphiidae, -Mysemindae) %>% 
-  group_by(date, Plot) %>% 
-  mutate(Plot = as.factor(Plot)) %>% 
+  group_by(date, plot) %>% 
+  mutate(plot = as.factor(plot)) %>% 
   summarise(Linyphiidae = sum(Linyphiidae),
             Thomisidae = sum(Thomisidae),
             Lycosidae = sum(Lycosidae),
@@ -193,18 +191,18 @@ spider_long_sum <- now %>%
 
 spider_plot_sum <- now %>% 
   ungroup() %>% 
-  dplyr::select(date, year, Plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
+  dplyr::select(date, year, plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
                 Araneidae,Liniphiidae) %>% 
   mutate(Linyphiidae = Liniphiidae + Linyphiidae,
          Mysmenidae = Mysemindae + Mysmenidae) %>%
   dplyr::select(-Liniphiidae, -Mysemindae) %>% 
-   mutate(trt = case_when(Plot %in% c('101','203','304','401','503') ~ '1',
-                         Plot %in% c('102', '201','303','402','502') ~ '3',
-                         Plot %in% c('103','204','302','403','501') ~ '2',
-                         Plot %in% c('104','202','301','404','504') ~ '4')) %>%
-  relocate(date, year, Plot, trt) %>% 
+   mutate(trt = case_when(plot %in% c('101','203','304','401','503') ~ '1',
+                          plot %in% c('102', '201','303','402','502') ~ '3',
+                          plot %in% c('103','204','302','403','501') ~ '2',
+                          plot %in% c('104','202','301','404','504') ~ '4')) %>%
+  relocate(date, year, plot, trt) %>% 
   mutate_at(vars(1:4), as.factor) %>%  
-  mutate(Plot = as.factor(Plot)) %>% 
+  mutate(plot = as.factor(plot)) %>% 
   summarise(Linyphiidae = sum(Linyphiidae),
             Thomisidae = sum(Thomisidae),
             Lycosidae = sum(Lycosidae),
@@ -219,18 +217,18 @@ spider_plot_sum <- now %>%
 
 spider_plot <- now %>% 
   ungroup() %>% 
-  dplyr::select(date, year, Plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
+  dplyr::select(date, year, plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
                 Araneidae,Liniphiidae) %>% 
   mutate(Linyphiidae = Liniphiidae + Linyphiidae,
          Mysmenidae = Mysemindae + Mysmenidae) %>%
   dplyr::select(-Liniphiidae, -Mysemindae) %>% 
-  mutate(trt = case_when(Plot %in% c('101','203','304','401','503') ~ '1',
-                         Plot %in% c('102', '201','303','402','502') ~ '3',
-                         Plot %in% c('103','204','302','403','501') ~ '2',
-                         Plot %in% c('104','202','301','404','504') ~ '4')) %>%
-  relocate(date, year, Plot, trt) %>% 
+  mutate(trt = case_when(plot %in% c('101','203','304','401','503') ~ '1',
+                         plot %in% c('102', '201','303','402','502') ~ '3',
+                         plot %in% c('103','204','302','403','501') ~ '2',
+                         plot %in% c('104','202','301','404','504') ~ '4')) %>%
+  relocate(date, year, plot, trt) %>% 
   mutate_at(vars(1:4), as.factor) %>%  
-  mutate(Plot = as.factor(Plot)) %>% 
+  mutate(plot = as.factor(plot)) %>% 
   pivot_longer(
     cols = where(is.numeric)
   ) %>% 
@@ -246,18 +244,22 @@ spider_plot <- now %>%
 
 spider_wide <- now %>% 
   ungroup() %>% 
-  dplyr::select(date, year, Plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
+  dplyr::select(date, year, plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
                 Araneidae,Liniphiidae) %>% 
   mutate(Linyphiidae = Liniphiidae + Linyphiidae,
          Mysmenidae = Mysemindae + Mysmenidae) %>%
   dplyr::select(-Liniphiidae, -Mysemindae) %>% 
-  rename(plot = Plot) %>% 
+  rename(plot = plot) %>% 
+  mutate(plot = case_when(plot == '308' ~ '304',
+         .default = as.factor(plot))) %>% 
   mutate(trt = case_when(plot %in% c('101','203','304','401','503') ~ '1',
                           plot %in% c('102', '201','303','402','502') ~ '3',
                           plot %in% c('103','204','302','403','501') ~ '2',
                           plot %in% c('104','202','301','404','504') ~ '4')) %>% 
   relocate(date, year, plot, trt) %>% 
-  mutate_at(vars(1:4), as.factor) 
+  mutate_at(vars(1:4), as.factor) %>% 
+  arrange(plot) %>% 
+  print(n = Inf)
 
 
 
@@ -316,7 +318,7 @@ spider_data_plot <- rbind(spider_data, t1_fixed, t2_fixed) %>%
                            plot %in% c('301', '302', '303', '304') ~ '3',
                            plot %in% c('401', '402', '403', '404') ~ '4',
                            plot %in% c('501', '502', '503', '504') ~ '5'),
-         block = as.factor(block)) %>%
+         block = as.factor(block)) %>%  
   group_by(date) %>% 
   summarise(mean = mean(spiders),
             sd = sd(spiders),
@@ -335,7 +337,13 @@ spider_model <- rbind(spider_mo, t1_fixed, t2_fixed) %>%
                            plot %in% c('301', '302', '303', '304') ~ '3',
                            plot %in% c('401', '402', '403', '404') ~ '4',
                            plot %in% c('501', '502', '503', '504') ~ '5')) %>% 
-  mutate_at(vars(1:3), as.factor)
+   mutate(trt = case_when(plot %in% c('101','203','304','401','503') ~ '1',
+                       plot %in% c('102', '201','303','402','502') ~ '3',
+                       plot %in% c('103','204','302','403','501') ~ '2',
+                       plot %in% c('104','202','301','404','504') ~ '4'),
+       trt = as.factor(trt)) %>% 
+  relocate(date, year, plot, block, trt) %>% 
+  mutate_at(vars(1:5), as.factor) 
 
 
 
@@ -385,7 +393,7 @@ autofit(gdf) %>%
 
 perm_df <- spider_model %>% 
   dplyr::select(-spiders) %>% 
-  group_by(date, year, plot) %>% 
+  group_by(date, year, plot, trt) %>% 
   summarise(
     Linyphiidae = sum(Linyphiidae),
     Thomisidae = sum(Thomisidae),
@@ -398,18 +406,18 @@ perm_df <- spider_model %>%
 unique(perm_df$date)
 str(perm_df)
 
-spider_no_zero <- perm_df[rowSums(perm_df[4:10])>0,]
-spider_fams <- spider_no_zero[4:10]
+spider_no_zero <- perm_df[rowSums(perm_df[5:11])>0,]
+spider_fams <- spider_no_zero[5:11]
 
 spider_dist <- vegdist(spider_fams, 'bray')
-adonis2(spider_dist ~ year + date, permutations = factorial(10), method = 'bray', data = spider_no_zero)
+adonis2(spider_dist ~ year + date + trt, permutations = factorial(10), method = 'bray', data = spider_no_zero)
 
 # Df SumOfSqs      R2      F   Pr(>F)   
-# Df SumOfSqs      R2      F    Pr(>F)    
-# year      1   0.9882 0.06353 3.2100 0.0135601 *  
-#   date      2   1.9450 0.12505 3.1592 0.0009317 ***
-#   Residual 41  12.6211 0.81142                     
-# Total    44  15.5543 1.00000   
+# year      1   1.4938 0.09369 4.9068 0.000916 ***
+#   date      2   1.8295 0.11474 3.0046 0.001020 ** 
+#   trt       3   1.0521 0.06599 1.1520 0.305328    
+# Residual 38  11.5690 0.72558                    
+# Total    44  15.9445 1.00000   
 
 # which year had the most?
 # which trt had the most?
@@ -425,7 +433,7 @@ spider_model %>%
             )
 # gosh this is close. Going to stick with Poisson
 
-m <- glm.nb(spiders ~ date ,
+m <- glm.nb(spiders ~ date,
           data = spider_model)
 
 p <- glm(spiders ~ date, 
@@ -473,6 +481,15 @@ spider_wide
 aov_fam <- apply(spider_wide[,5:ncol(spider_wide)], 2, function(x) aov(x ~ trt, data = spider_wide))
 tukey_fam <- sapply(aov_fam, function(x) TukeyHSD(x , 'trt', ordered = TRUE))
 # this is nice 
+# $Tetragnathidae.trt
+# diff          lwr        upr      p adj
+# 3-2 0.006024096 -0.074371489 0.08641968 0.99742333
+# 4-2 0.043975904 -0.043786720 0.13173853 0.56701693
+# 1-2 0.086833046  0.002787656 0.17087844 0.03983607 *
+# 4-3 0.037951807 -0.049810816 0.12571443 0.67911899
+# 1-3 0.080808950 -0.003236440 0.16485434 0.06446528 #
+# 1-4 0.042857143 -0.048260669 0.13397495 0.61760736
+
 
 aov_fam_df <- do.call(rbind, lapply(aov_fam, broom::tidy))
 # this df is hard to look at
@@ -546,6 +563,28 @@ ggplot(spider_plot, aes(x = name, y = mean))+
   annotate('text', x = 5 , y = .13, label = 'a', size = 10)+
   annotate('text', x = 6 , y = .13, label = 'ab', size = 10)+
   annotate('text', x = 7 , y = .13, label = 'b', size = 10)
+
+
+# individual spider families for the marginal plot in supplementary 
+# lycosidae and tetrgnathidae by trt
+
+tet_plot <- spider_wide %>% 
+  dplyr::select(trt, Tetragnathidae) %>% 
+  group_by(trt) %>% 
+  summarise(
+    sum = sum(Tetragnathidae),
+    mean = mean(Tetragnathidae),
+    sd = sd(Tetragnathidae),
+    n = n(),
+    se = sd/sqrt(n)
+  )
+
+ggplot(tet_plot, aes(x = trt, y = mean))+
+  geom_bar(position = 'dodge', stat = 'identity',  alpha = 0.7)+
+  geom_errorbar(aes(ymin = mean-se, ymax = mean+se),
+                color = 'black', alpha = 1, width = 0.2, linewidth = 1.5)
+
+
 
 
 group_sum
