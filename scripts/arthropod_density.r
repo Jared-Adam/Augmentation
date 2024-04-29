@@ -224,20 +224,20 @@ cld(sp_emm, Letters = letters)
 
 
 ggplot(fig_df, aes(x= Treatment, y = Araneomorphae, fill = Treatment))+
-  geom_boxplot() +
+  geom_boxplot(alpha = 0.7) +
   geom_point(size = 2)+
   scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
-  #geom_errorbar(aes(x=fig_df, ymin = mean-sd, ymax=mean + sd))+
   scale_x_discrete(limits = c(2, 1, 3),
     labels = c("Control","Depletion","Augmentation"))+
   labs(title = "Total Araneomorphae Population x Treatment",
        x = "Treatment",
        y = "Araneomorphae population")+
   theme(legend.position = 'none',
-        axis.text.x = element_text(size = 26),
+        axis.text.x = element_text(size=26),
         axis.text.y = element_text(size = 26),
         axis.title = element_text(size = 32),
-        plot.title = element_text(size = 26), 
+        plot.title = element_text(size = 28),
+        plot.subtitle = element_text(size = 24),
         panel.grid.major.y = element_line(color = "darkgrey"),
         panel.grid.major.x = element_blank(),
         panel.grid.minor = element_blank())+
@@ -278,7 +278,7 @@ cld(p_emm, Letters = letters)
 
 
 ggplot(fig_df, aes(x= Treatment, y = total_pest, fill = Treatment))+
-  geom_boxplot() +
+  geom_boxplot(alpha = 0.7) +
   geom_point(size = 2)+
   scale_fill_manual(values = c("#7570B3","#D95F02","#1B9E77"))+
   #geom_errorbar(aes(x=fig_df, ymin = mean-sd, ymax=mean + sd))+
