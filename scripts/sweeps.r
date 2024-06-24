@@ -649,7 +649,7 @@ ggplot(spider_plot, aes(x = name, y = mean))+
   labs(title = 'Average Araneomorphae Family Counts',
        subtitle = 'Years: 2022-2023',
        x = 'Family name')+
-  ylab(bquote('Average Counts / 76'(m ^2)))+
+  ylab(bquote('Average counts / 76'(m ^2)))+
   theme(legend.position = 'none',
         axis.text.x = element_text(size=26),
         axis.text.y = element_text(size = 26),
@@ -664,7 +664,7 @@ ggplot(spider_plot, aes(x = name, y = mean))+
   annotate('text', x = 2 , y = .13, label = 'ab', size = 10)+
   annotate('text', x = 3 , y = .13, label = 'ab', size = 10)+
   annotate('text', x = 4 , y = .13, label = 'ab', size = 10)+
-  annotate('text', x = 5 , y = .13, label = 'a', size = 10)+
+  annotate('text', x = 5 , y = .13, label = 'ab', size = 10)+
   annotate('text', x = 6 , y = .13, label = 'ab', size = 10)+
   annotate('text', x = 7 , y = .13, label = 'b', size = 10)
 
@@ -732,7 +732,7 @@ ggplot(spider_data_plot, aes(factor(date), mean))+
   labs(title = 'Mean Araneomoprhae x Sampling Date',
        subtitle = 'Years: 2022-2023',
        x = 'Sampling Date', 
-       y = 'Mean Population')+
+       y = 'Mean population')+
   theme(legend.position = 'none',
         axis.text.x = element_text(size=26),
         axis.text.y = element_text(size = 26),

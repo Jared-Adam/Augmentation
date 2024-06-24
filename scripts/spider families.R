@@ -193,7 +193,7 @@ ggplot(filter(long_mean, name != 'unknown'), aes(name, mean))+
                               "Philodromidae"))+
   labs(title = 'Average Araneomorphae Family Populations',
        subtitle = 'Year: Augmentation 2023',
-       y = 'Average Counts',
+       y = 'Average counts',
        x = 'Family name')+
   theme(legend.position = 'none',
         axis.text.x = element_text(size=26),
