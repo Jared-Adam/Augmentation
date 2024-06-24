@@ -28,6 +28,18 @@ fam_wide <- fam %>%
   replace(is.na(.),0) %>% 
   mutate(plot = case_when(plot == '101' ~ '100',
                          .default = as.character(plot)))
+# total
+fam_wide %>% 
+  pivot_longer(
+    cols = where(is.integer),
+    values_to = 'count'
+  ) %>% 
+  group_by(trt) %>% 
+  summarise(sum = sum(count))
+# 1 aug     194
+# 2 ctl     140
+# 3 dep      64
+
 
 long_trt_sum <- fam_wide %>% 
   group_by(trt) %>% 

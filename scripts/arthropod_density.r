@@ -14,6 +14,18 @@ library(ggrepel)
 
 # cleaning of the data ####
 counts<- as_tibble(augmentation_counts)
+# total
+counts %>% 
+  mutate(plot = as.factor(plot)) %>% 
+  pivot_longer(cols = where(is.numeric),
+               values_to = 'count') %>% 
+  group_by(trt) %>% 
+  summarise(sum = sum(count))
+# trt     sum
+# <chr> <dbl>
+#   1 aug    1216
+# 2 ctl     866
+# 3 dep     456
 
 # merging pentatomid into hermiptera 
 # I also want to add a new column for total pest
@@ -213,12 +225,16 @@ s1 <- glmer.nb(Araneomorphae ~ trt +
                  (1|site), data = counts_clean)
 
 anova(s0, s1)
-
+# npar    AIC    BIC   logLik deviance  Chisq Df Pr(>Chisq)    
+# s0    3 223.56 228.05 -108.778   217.56                         
+# s1    5 207.03 214.51  -98.514   197.03 20.529  2  3.486e-05 ***
 summary(s1)
 hist(residuals(s1))
-
-sp_emm <- emmeans(s1, ~trt)
-cld(sp_emm, Letters = letters)
+cld(emmeans(s1, ~trt), Letters = letters)
+# trt emmean    SE  df asymp.LCL asymp.UCL .group
+# 2     1.69 0.175 Inf      1.35      2.04  a    
+# 1     2.54 0.147 Inf      2.25      2.82   b   
+# 3     2.81 0.140 Inf      2.54      3.09   b 
 
 
 
@@ -268,12 +284,17 @@ p0 <- glmer.nb(total_pest ~
 p1 <- glmer.nb(total_pest ~ trt + 
                          (1|site), data = counts_clean)
 anova(p0, p1)
-
+# npar    AIC    BIC  logLik deviance  Chisq Df Pr(>Chisq)    
+# p0    3 335.96 340.45 -164.98   329.96                         
+# p1    5 325.41 332.90 -157.71   315.41 14.544  2  0.0006947 ***
 summary(p1)
 hist(residuals(p1))
+cld(emmeans(p1, ~trt), Letters = letters)
+# trt emmean    SE  df asymp.LCL asymp.UCL .group
+# 2     3.58 0.160 Inf      3.27      3.90  a    
+# 1     4.19 0.156 Inf      3.88      4.50   b   
+# 3     4.54 0.155 Inf      4.24      4.85   b   
 
-p_emm <- emmeans(p1, ~trt)
-cld(p_emm, Letters = letters)
 
 
 

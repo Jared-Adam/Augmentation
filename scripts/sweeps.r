@@ -46,6 +46,20 @@ now <- sweeps %>%
                          plot %in% c('103','204','302','403','501') ~ '2',
                          plot %in% c('104','202','301','404','504') ~ '4')) 
 
+#total 
+now %>% 
+  pivot_longer(cols = where(is.numeric),
+               values_to = 'count') %>% 
+  group_by(trt) %>% 
+  summarise(sum = sum(count))
+# trt     sum
+# <chr> <int>
+# 1 1       178
+# 2 2       193
+# 3 3       134
+# 4 4       105
+
+
 groups <- now %>% 
   ungroup() %>% 
   mutate(spiders = Linyphiidae + Thomisidae + Lycosidae + Mysemindae + Mysmenidae + Salticidae + Tetragnathidae +
@@ -170,12 +184,12 @@ now <- rbind(now_22, now_23)
 
 spider_long_sum <- now %>% 
   ungroup() %>% 
-  dplyr::select(date, year, plot, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
+  dplyr::select(date, year, plot, trt, Linyphiidae, Thomisidae, Lycosidae, Mysemindae, Mysmenidae,Salticidae,Tetragnathidae,
            Araneidae,Liniphiidae) %>% 
   mutate(Linyphiidae = Liniphiidae + Linyphiidae,
          Mysmenidae = Mysemindae + Mysmenidae) %>%
   dplyr::select(-Liniphiidae, -Mysemindae) %>% 
-  group_by(date, plot) %>% 
+  group_by(date, plot, trt) %>% 
   mutate(plot = as.factor(plot)) %>% 
   summarise(Linyphiidae = sum(Linyphiidae),
             Thomisidae = sum(Thomisidae),
@@ -362,6 +376,95 @@ aov_group_df %>%
 # this df is hard to look at
 tukey_group_df <- as.data.frame(do.call(rbind, Map(cbind, Name = names(tukey_group), tukey_group)))
 
+# spider models by trt
+groups_m <- groups %>% 
+  mutate(block = case_when(
+    str_detect(plot, '10') ~ '1',
+    str_detect(plot, '20') ~ '2',
+    str_detect(plot, '30') ~ '3',
+    str_detect(plot, '40') ~ '4',
+    str_detect(plot, '50') ~ '5'
+  )) %>% 
+  mutate(block = as.factor(block)) %>% 
+  mutate(pests = other_beetle + Thrips + other_hem + cael + ensif +Hesperiidae) %>% 
+  group_by(plot, block, year, trt) %>% 
+  summarise(average_spider = mean(spiders),
+            average_pest = mean(pests)) %>% 
+  print(n =Inf)
+  
+nb <- glmer.nb(average_spider ~ trt*year +
+                 (1|block/plot), data = groups_m)
+
+p <- glmer(average_spider ~ trt*year +
+             (1|block/plot), data = groups_m, family = poisson)
+
+g <- lmer(average_spider ~ trt*year +
+            (1|block/plot), data = groups_m)
+
+anova(nb, p, g)
+
+m0 <- glmer.nb(average_spider ~
+                 (1|block), data = groups_m)
+
+m1 <- glmer.nb(average_spider ~ trt +
+           (1|block), data = groups_m)
+
+m2 <- glmer.nb(average_spider ~ trt+year +
+           (1|block), data = groups_m)
+
+m3 <- glmer.nb(average_spider ~ trt*year +
+           (1|block), data = groups_m)
+
+anova(m0, m1, m2, m3)
+# npar    AIC    BIC  logLik deviance   Chisq Df Pr(>Chisq)    
+# m0    3 83.360 88.427 -38.680   77.360                          
+# m1    6 89.226 99.359 -38.613   77.226  0.1346  3     0.9874    
+# m2    7 65.930 77.752 -25.965   51.930 25.2958  1  4.918e-07 ***
+# m3   10 71.854 88.743 -25.927   51.854  0.0756  3     0.9946 
+summary(m3)
+hist(residuals(m3))
+plot(m3)
+
+cld(emmeans(m3, ~year), Letters = letters)
+# year emmean    SE  df asymp.LCL asymp.UCL .group
+# 2023 -3.109 1.109 Inf     -5.28    -0.936  a    
+# 2022  0.137 0.208 Inf     -0.27     0.544   b  
+
+# pest models by trt
+nb <- glmer.nb(average_pest ~ trt*year +
+                 (1|block/plot), data = groups_m)
+
+p <- glmer(average_pest ~ trt*year +
+             (1|block/plot), data = groups_m, family = poisson)
+
+g <- lmer(average_pest ~ trt*year +
+            (1|block/plot), data = groups_m)
+
+anova(nb, p, g)
+
+p0 <- glmer.nb(average_pest ~
+                 (1|block/plot), data = groups_m)
+
+p1 <- glmer.nb(average_pest ~ trt +
+                 (1|block/plot), data = groups_m)
+
+p2 <- glmer.nb(average_pest ~ trt+year +
+                 (1|block/plot), data = groups_m)
+
+p3 <- glmer.nb(average_pest ~ trt*year +
+                 (1|block/plot), data = groups_m)
+
+anova(p0, p1, p2, p3)
+# npar    AIC    BIC  logLik deviance   Chisq Df Pr(>Chisq)    
+# p0    4 49.722 56.477 -20.861   41.722                          
+# p1    7 55.321 67.143 -20.660   41.321  0.4008  3  0.9400679    
+# p2    8 44.458 57.970 -14.229   28.458 12.8624  1  0.0003352 ***
+# p3   11 50.458 69.036 -14.229   28.458  0.0000  3  1.0000000 
+
+cld(emmeans(m3, ~year, type = 'response'), Letters = letters)
+# year response     SE  df asymp.LCL asymp.UCL .group
+# 2023   0.0447 0.0495 Inf   0.00508     0.392  a    
+# 2022   1.1466 0.2382 Inf   0.76309     1.723   b  
 
 ###
 
@@ -490,6 +593,7 @@ tukey_fam <- sapply(aov_fam, function(x) TukeyHSD(x , 'trt', ordered = TRUE))
 # 1-3 0.080808950 -0.003236440 0.16485434 0.06446528 #
 # 1-4 0.042857143 -0.048260669 0.13397495 0.61760736
 
+plot(tukey_fam$Tetragnathidae.trt)
 
 aov_fam_df <- do.call(rbind, lapply(aov_fam, broom::tidy))
 # this df is hard to look at
